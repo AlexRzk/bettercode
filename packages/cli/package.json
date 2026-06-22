@@ -5,6 +5,7 @@
   "type": "module",
   "license": "MIT",
   "bin": {
+    "better-code": "./bin/better-code.cjs",
     "lildax": "./bin/lildax.cjs"
   },
   "files": [

@@ -4,6 +4,10 @@ export type CheckStatus = "passed" | "warning" | "failed" | "skipped"
 
 export type RiskLevel = "low" | "medium" | "high" | "critical"
 
+export type PackageManager = "npm" | "pnpm" | "yarn" | "bun"
+
+export type ProjectCommandName = "lint" | "typecheck" | "test" | "build" | "format" | "format:check"
+
 export type ProjectType =
   | "node"
   | "nextjs"
@@ -20,6 +24,14 @@ export interface ProjectInfo {
   rootPath: string
   signals: string[]
 }
+
+export interface ProjectCommand {
+  name: ProjectCommandName
+  command: string
+  available: true
+}
+
+export type AvailableCommands = Partial<Record<ProjectCommandName, ProjectCommand>>
 
 export interface CheckResult {
   id: string

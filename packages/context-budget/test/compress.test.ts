@@ -132,6 +132,18 @@ describe("selectRelevantBrainSections", () => {
     expect(approxTokens(result)).toBeLessThanOrEqual(30)
   })
 
+  test("skips oversized matching sections and keeps smaller fits", () => {
+    const oversized = `## Broad Auth Section\n${"auth error ".repeat(100)}`
+    const specific = "## Auth Fix\n- auth token refresh error"
+    const unrelated = "## Deploy\n- aws"
+    const result = selectRelevantBrainSections("auth error", `${oversized}\n\n${specific}\n\n${unrelated}`, 20)
+
+    expect(result).toContain("## Auth Fix")
+    expect(result).toContain("auth token refresh error")
+    expect(result).not.toContain("## Broad Auth Section")
+    expect(approxTokens(result)).toBeLessThanOrEqual(20)
+  })
+
   test("ranks by relevance", () => {
     const brain = "## Stack\n- Type: node\n\n## Errors\n- auth error\n\n## Deploy\n- aws"
     const result = selectRelevantBrainSections("error auth", brain, 200)

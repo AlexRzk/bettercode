@@ -153,7 +153,7 @@ export function selectRelevantBrainSections(query: string, brainText: string, ma
   let totalLen = 0
 
   for (const { section } of scored) {
-    if (totalLen + section.length > maxChars) break
+    if (totalLen + section.length > maxChars) continue
     result.push(section)
     totalLen += section.length
   }

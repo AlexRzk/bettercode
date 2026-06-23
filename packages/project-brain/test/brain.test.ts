@@ -166,6 +166,44 @@ describe("brainUpdate", () => {
     expect(startCount).toBe(1)
   })
 
+  test("migrates legacy profile while preserving user notes", async () => {
+    const dir = createFixture("update-legacy-notes")
+    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    writeFileSync(
+      join(dir, ".better-code", "brain", "profile.md"),
+      [
+        "# Project Profile",
+        "",
+        "Custom note before generated content.",
+        "",
+        "## Stack",
+        "- Type: old-type",
+        "",
+        "## Package Manager",
+        "- npm",
+        "",
+        "## Available Commands",
+        "- lint: npm run lint",
+        "",
+        "## Custom Section",
+        "- user data that must survive",
+        "",
+      ].join("\n"),
+    )
+
+    await brainUpdate(dir)
+
+    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    expect(profile).toContain("Custom note before generated content.")
+    expect(profile).toContain("## Custom Section")
+    expect(profile).toContain("user data that must survive")
+    expect(profile).not.toContain("old-type")
+    expect(profile).toContain("<!-- better-code:generated-profile:start -->")
+    expect(profile).toContain("<!-- better-code:generated-profile:end -->")
+    const startCount = (profile.match(/<!-- better-code:generated-profile:start -->/g) || []).length
+    expect(startCount).toBe(1)
+  })
+
   test("preserves custom markerless notes that are not legacy generated", async () => {
     const dir = createFixture("update-custom-no-markers")
     mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })

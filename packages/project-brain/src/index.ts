@@ -38,6 +38,36 @@ function isLegacyGeneratedProfile(content: string): boolean {
   return lower.startsWith("# project profile") && lower.includes("## stack") && lower.includes("## package manager") && lower.includes("## available commands")
 }
 
+const legacyGeneratedHeadings = ["## stack", "## package manager", "## available commands", "## critical paths"]
+
+function migrateLegacyProfile(content: string): string {
+  const lines = content.split("\n")
+  const preserved: string[] = []
+  let i = 0
+
+  while (i < lines.length) {
+    const line = lines[i]!
+    const lower = line.trim().toLowerCase()
+
+    if (lower === "# project profile") {
+      i++
+      continue
+    }
+
+    if (legacyGeneratedHeadings.includes(lower)) {
+      i++
+      while (i < lines.length && !lines[i]!.trim().startsWith("##")) i++
+      continue
+    }
+
+    preserved.push(line)
+    i++
+  }
+
+  const cleaned = preserved.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd()
+  return cleaned ? `${cleaned}\n\n` : ""
+}
+
 export async function brainUpdate(rootPath: string): Promise<{ profileUpdated: boolean; historyAppended: boolean }> {
   const dir = join(rootPath, brainDir)
   await mkdir(dir, { recursive: true })
@@ -95,7 +125,8 @@ export async function brainUpdate(rootPath: string): Promise<{ profileUpdated: b
       const after = existing.slice(endIdx + endMarker.length)
       await writeFile(profilePath, `${before}${generatedSection}${after}`)
     } else if (isLegacyGeneratedProfile(existing)) {
-      await writeFile(profilePath, `# Project Profile\n\n${generatedSection}`)
+      const preserved = migrateLegacyProfile(existing)
+      await writeFile(profilePath, `# Project Profile\n\n${preserved}${generatedSection}`)
     } else {
       await writeFile(profilePath, `${existing.trimEnd()}\n\n${generatedSection}`)
     }

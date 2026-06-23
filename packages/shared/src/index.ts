@@ -45,6 +45,7 @@ export interface CheckResult {
 export interface QualityGateResult {
   status: GateStatus
   score: number
+  risk: RiskLevel
   checks: CheckResult[]
   warnings: string[]
   blockingReasons: string[]
@@ -71,6 +72,7 @@ export interface QualityGateScoreInput {
   checks: CheckResult[]
   filesChanged: number
   diffLines: number
+  risk?: RiskLevel
   warnings?: string[]
   secretDetected?: boolean
   rules?: Partial<QualityGateRules>
@@ -78,9 +80,10 @@ export interface QualityGateScoreInput {
 }
 
 export interface DiffRiskResult {
-  level: RiskLevel
-  score: number
+  risk: RiskLevel
   reasons: string[]
+  reviewRequired: boolean
+  requiredChecks: string[]
 }
 
 export interface GitDiffSummary {

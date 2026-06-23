@@ -7,8 +7,12 @@ import type {
   ProjectCommandName,
   ProjectInfo,
   ProjectType,
+  QualityGateCommandConfig,
+  QualityGateConfig,
+  QualityGateRules,
   QualityGateScoreInput,
   QualityGateResult,
+  QualityGateThresholds,
 } from "@better-code/shared"
 
 type ProjectSignal = {
@@ -49,6 +53,71 @@ const failedCheckPenalty: Partial<Record<ProjectCommandName, number>> = {
   test: 25,
   build: 30,
   format: 5,
+}
+
+export function loadProjectConfig(rootPath: string): QualityGateConfig {
+  const configPath = join(rootPath, ".better-code", "quality-gate.json")
+  if (!existsSync(configPath)) return {}
+
+  let raw: unknown
+  try {
+    raw = JSON.parse(readFileSync(configPath, "utf8"))
+  } catch {
+    console.warn(`[better-code] Could not parse ${configPath}, using defaults.`)
+    return {}
+  }
+
+  return validateConfig(raw)
+}
+
+function validateConfig(raw: unknown): QualityGateConfig {
+  if (typeof raw !== "object" || raw === null) {
+    console.warn("[better-code] Config is not an object, using defaults.")
+    return {}
+  }
+
+  const config = raw as Record<string, unknown>
+  const result: QualityGateConfig = {}
+
+  if (typeof config.version === "number") result.version = config.version
+
+  if (typeof config.thresholds === "object" && config.thresholds !== null) {
+    const t = config.thresholds as Record<string, unknown>
+    const thresholds: Partial<QualityGateThresholds> = {}
+    if (typeof t.passScore === "number") thresholds.passScore = t.passScore
+    if (typeof t.warnScore === "number") thresholds.warnScore = t.warnScore
+    if (typeof t.maxChangedFiles === "number") thresholds.maxChangedFiles = t.maxChangedFiles
+    if (typeof t.maxDiffLines === "number") thresholds.maxDiffLines = t.maxDiffLines
+    if (Object.keys(thresholds).length > 0) result.thresholds = thresholds
+  }
+
+  if (typeof config.rules === "object" && config.rules !== null) {
+    const r = config.rules as Record<string, unknown>
+    const rules: Partial<QualityGateRules> = {}
+    if (typeof r.failOnBuildError === "boolean") rules.failOnBuildError = r.failOnBuildError
+    if (typeof r.failOnTypecheckError === "boolean") rules.failOnTypecheckError = r.failOnTypecheckError
+    if (typeof r.failOnSecrets === "boolean") rules.failOnSecrets = r.failOnSecrets
+    if (typeof r.warnOnMissingTests === "boolean") rules.warnOnMissingTests = r.warnOnMissingTests
+    if (typeof r.reviewCriticalPath === "boolean") rules.reviewCriticalPath = r.reviewCriticalPath
+    if (Object.keys(rules).length > 0) result.rules = rules
+  }
+
+  if (typeof config.commands === "object" && config.commands !== null) {
+    const c = config.commands as Record<string, unknown>
+    const commands: Partial<Record<ProjectCommandName, QualityGateCommandConfig>> = {}
+    for (const [key, value] of Object.entries(c)) {
+      if (commandNames.includes(key as ProjectCommandName) && typeof value === "string") {
+        commands[key as ProjectCommandName] = value
+      }
+    }
+    if (Object.keys(commands).length > 0) result.commands = commands
+  }
+
+  if (Array.isArray(config.criticalPaths) && config.criticalPaths.every((p) => typeof p === "string")) {
+    result.criticalPaths = config.criticalPaths
+  }
+
+  return result
 }
 
 export function createPlaceholderQualityGateResult(): QualityGateResult {
@@ -108,11 +177,13 @@ export function detectProject(rootPath: string): ProjectInfo {
 }
 
 export async function runQualityGate(rootPath: string): Promise<QualityGateResult> {
-  const commands = detectAvailableCommands(rootPath)
+  const config = loadProjectConfig(rootPath)
+  const detectedCommands = detectAvailableCommands(rootPath)
+  const commands = resolveCommands(detectedCommands, config.commands)
   const diff = await analyzeGitDiff(rootPath)
   const checks = []
   for (const name of gateCommandNames) {
-    const command = commands[name]?.command
+    const command = commands[name]
     if (!command) {
       checks.push({
         name,
@@ -137,6 +208,8 @@ export async function runQualityGate(rootPath: string): Promise<QualityGateResul
     warnings: diff.warnings,
     filesChanged: diff.filesChanged,
     diffLines: diff.diffLines,
+    rules: config.rules,
+    thresholds: config.thresholds,
   })
 }
 
@@ -192,6 +265,22 @@ function formatScriptCommand(packageManager: PackageManager, name: ProjectComman
   if (packageManager === "pnpm") return `pnpm ${name}`
   if (packageManager === "yarn") return `yarn ${name}`
   return `bun run ${name}`
+}
+
+function resolveCommands(
+  detected: AvailableCommands,
+  configCommands?: Partial<Record<ProjectCommandName, QualityGateCommandConfig>>,
+): Record<string, string | undefined> {
+  const result: Record<string, string | undefined> = {}
+  for (const name of gateCommandNames) {
+    const configValue = configCommands?.[name]
+    if (configValue === "auto" || configValue === undefined) {
+      result[name] = detected[name]?.command
+    } else {
+      result[name] = configValue
+    }
+  }
+  return result
 }
 
 async function runShellCommand(rootPath: string, command: string) {

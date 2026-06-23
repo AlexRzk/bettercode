@@ -32,6 +32,12 @@ export async function brainInit(rootPath: string): Promise<string[]> {
 const startMarker = "<!-- better-code:generated-profile:start -->"
 const endMarker = "<!-- better-code:generated-profile:end -->"
 
+function isLegacyGeneratedProfile(content: string): boolean {
+  if (content.includes(startMarker) || content.includes(endMarker)) return false
+  const lower = content.toLowerCase()
+  return lower.startsWith("# project profile") && lower.includes("## stack") && lower.includes("## package manager") && lower.includes("## available commands")
+}
+
 export async function brainUpdate(rootPath: string): Promise<{ profileUpdated: boolean; historyAppended: boolean }> {
   const dir = join(rootPath, brainDir)
   await mkdir(dir, { recursive: true })
@@ -88,6 +94,8 @@ export async function brainUpdate(rootPath: string): Promise<{ profileUpdated: b
       const before = existing.slice(0, startIdx)
       const after = existing.slice(endIdx + endMarker.length)
       await writeFile(profilePath, `${before}${generatedSection}${after}`)
+    } else if (isLegacyGeneratedProfile(existing)) {
+      await writeFile(profilePath, `# Project Profile\n\n${generatedSection}`)
     } else {
       await writeFile(profilePath, `${existing.trimEnd()}\n\n${generatedSection}`)
     }

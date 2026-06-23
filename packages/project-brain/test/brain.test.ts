@@ -131,6 +131,69 @@ describe("brainUpdate", () => {
     expect(profile).toContain("## Stack")
   })
 
+  test("migrates legacy markerless generated profile", async () => {
+    const dir = createFixture("update-legacy")
+    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    writeFileSync(
+      join(dir, ".better-code", "brain", "profile.md"),
+      [
+        "# Project Profile",
+        "",
+        "## Stack",
+        "- Type: old-type",
+        "- Signals: old-signal",
+        "",
+        "## Package Manager",
+        "- npm",
+        "",
+        "## Available Commands",
+        "- lint: npm run lint",
+        "",
+      ].join("\n"),
+    )
+
+    await brainUpdate(dir)
+
+    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    expect(profile).not.toContain("old-type")
+    expect(profile).not.toContain("old-signal")
+    expect(profile).toContain("<!-- better-code:generated-profile:start -->")
+    expect(profile).toContain("<!-- better-code:generated-profile:end -->")
+    expect(profile).toContain("## Stack")
+    expect(profile).toContain("## Package Manager")
+    expect(profile).toContain("## Available Commands")
+    const startCount = (profile.match(/<!-- better-code:generated-profile:start -->/g) || []).length
+    expect(startCount).toBe(1)
+  })
+
+  test("preserves custom markerless notes that are not legacy generated", async () => {
+    const dir = createFixture("update-custom-no-markers")
+    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    writeFileSync(
+      join(dir, ".better-code", "brain", "profile.md"),
+      [
+        "# My Project Notes",
+        "",
+        "## Stack",
+        "- some custom note",
+        "",
+        "## Custom Section",
+        "- user data",
+        "",
+      ].join("\n"),
+    )
+
+    await brainUpdate(dir)
+
+    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    expect(profile).toContain("# My Project Notes")
+    expect(profile).toContain("some custom note")
+    expect(profile).toContain("## Custom Section")
+    expect(profile).toContain("user data")
+    expect(profile).toContain("<!-- better-code:generated-profile:start -->")
+    expect(profile).toContain("<!-- better-code:generated-profile:end -->")
+  })
+
   test("appends to task-history.jsonl when gate result exists", async () => {
     const dir = createFixture("update-history")
     mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })

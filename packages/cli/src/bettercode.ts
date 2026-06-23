@@ -133,26 +133,31 @@ function migrateLegacyConfig(repoRoot: string) {
   const legacyDir = join(repoRoot, ".better-code")
   const newDir = join(repoRoot, configDir)
 
-  if (!statSafe(legacyDir)) return
-  if (statSafe(newDir)) return
+  const legacyStat = statSafe(legacyDir)
+  if (!legacyStat?.isDirectory()) return
 
   try {
     const { readdirSync, copyFileSync, mkdirSync } = require("node:fs")
     mkdirSync(newDir, { recursive: true })
     mkdirSync(join(newDir, "brain"), { recursive: true })
 
-    for (const file of readdirSync(legacyDir)) {
-      const src = join(legacyDir, file)
-      const dest = join(newDir, file)
-      if (statSafe(src)) copyFileSync(src, dest)
+    for (const entry of readdirSync(legacyDir)) {
+      const src = join(legacyDir, entry)
+      const srcStat = statSafe(src)
+      if (srcStat?.isFile()) {
+        copyFileSync(src, join(newDir, entry))
+      }
     }
 
     const brainSrc = join(legacyDir, "brain")
-    if (statSafe(brainSrc)) {
-      for (const file of readdirSync(brainSrc)) {
-        const src = join(brainSrc, file)
-        const dest = join(newDir, "brain", file)
-        if (statSafe(src)) copyFileSync(src, dest)
+    const brainStat = statSafe(brainSrc)
+    if (brainStat?.isDirectory()) {
+      for (const entry of readdirSync(brainSrc)) {
+        const src = join(brainSrc, entry)
+        const srcStat = statSafe(src)
+        if (srcStat?.isFile()) {
+          copyFileSync(src, join(newDir, "brain", entry))
+        }
       }
     }
 

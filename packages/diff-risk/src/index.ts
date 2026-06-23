@@ -16,7 +16,7 @@ const riskRules: RiskRule[] = [
   { pattern: /^src\/app\/api\//, risk: "high", reason: "API route modified", checks: ["typecheck", "test", "build"] },
   { pattern: /^middleware\.ts$/, risk: "high", reason: "Middleware modified", checks: ["typecheck", "test", "build"] },
   { pattern: /(^|\/)package\.json$/, risk: "high", reason: "Package manifest modified", checks: ["typecheck", "test", "build"] },
-  { pattern: /^(package-lock\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lock|bun\.lockb)$/, risk: "high", reason: "Lockfile modified", checks: ["typecheck", "test", "build"] },
+  { pattern: /(^|\/)(package-lock\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lock|bun\.lockb)$/, risk: "high", reason: "Lockfile modified", checks: ["typecheck", "test", "build"] },
   { pattern: /^src\/components\//, risk: "medium", reason: "Component code modified", checks: ["typecheck", "test"] },
   { pattern: /\.css$/, risk: "low", reason: "Stylesheet modified", checks: ["test"] },
   { pattern: /^README\.md$/, risk: "low", reason: "Documentation modified", checks: [] },

@@ -6,10 +6,14 @@
   "private": true,
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target bun --format esm",
+    "test": "bun test",
     "typecheck": "tsgo --noEmit"
   },
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@better-code/quality-gate": "workspace:*"
   },
   "devDependencies": {
     "@tsconfig/bun": "catalog:",

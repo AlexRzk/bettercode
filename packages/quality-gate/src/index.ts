@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
-import { analyzeGitDiff } from "@better-code/diff-risk"
+import { analyzeDiffRisk, analyzeGitDiff } from "@better-code/diff-risk"
 import type {
   AvailableCommands,
   PackageManager,
@@ -13,6 +13,7 @@ import type {
   QualityGateScoreInput,
   QualityGateResult,
   QualityGateThresholds,
+  RiskLevel,
 } from "@better-code/shared"
 
 type ProjectSignal = {
@@ -124,6 +125,7 @@ export function createPlaceholderQualityGateResult(): QualityGateResult {
   return {
     status: "SKIPPED",
     score: 0,
+    risk: "low",
     checks: [],
     warnings: [],
     blockingReasons: [],
@@ -181,6 +183,7 @@ export async function runQualityGate(rootPath: string): Promise<QualityGateResul
   const detectedCommands = detectAvailableCommands(rootPath)
   const commands = resolveCommands(detectedCommands, config.commands)
   const diff = await analyzeGitDiff(rootPath)
+  const riskResult = analyzeDiffRisk(diff.changedFiles)
   const checks = []
   for (const name of gateCommandNames) {
     const command = commands[name]
@@ -208,6 +211,7 @@ export async function runQualityGate(rootPath: string): Promise<QualityGateResul
     warnings: diff.warnings,
     filesChanged: diff.filesChanged,
     diffLines: diff.diffLines,
+    risk: riskResult.risk,
     rules: config.rules,
     thresholds: config.thresholds,
   })
@@ -243,6 +247,7 @@ export function scoreQualityGate(input: QualityGateScoreInput): QualityGateResul
   return {
     status,
     score,
+    risk: input.risk ?? "low",
     checks: input.checks,
     warnings,
     blockingReasons,

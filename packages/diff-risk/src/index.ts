@@ -1,10 +1,73 @@
-import type { DiffRiskResult, GitDiffSummary } from "@better-code/shared"
+import type { DiffRiskResult, GitDiffSummary, RiskLevel } from "@better-code/shared"
+
+type RiskRule = {
+  pattern: RegExp
+  risk: RiskLevel
+  reason: string
+  checks: string[]
+}
+
+const riskRules: RiskRule[] = [
+  { pattern: /^\.env/, risk: "critical", reason: "Secrets file modified", checks: ["typecheck", "test", "build"] },
+  { pattern: /secret/i, risk: "critical", reason: "Potential secrets file modified", checks: ["typecheck", "test", "build"] },
+  { pattern: /^prisma\/migrations\//, risk: "critical", reason: "Database migration modified", checks: ["typecheck", "test", "build"] },
+  { pattern: /^contracts\/.*\.sol$/, risk: "critical", reason: "Solidity contract modified", checks: ["typecheck", "test", "build"] },
+  { pattern: /^src\/auth\//, risk: "high", reason: "Auth code modified", checks: ["typecheck", "test", "build"] },
+  { pattern: /^src\/app\/api\//, risk: "high", reason: "API route modified", checks: ["typecheck", "test", "build"] },
+  { pattern: /^middleware\.ts$/, risk: "high", reason: "Middleware modified", checks: ["typecheck", "test", "build"] },
+  { pattern: /^package\.json$/, risk: "high", reason: "Package manifest modified", checks: ["typecheck", "test", "build"] },
+  { pattern: /^.*lock(b)?$/, risk: "high", reason: "Lockfile modified", checks: ["typecheck", "test", "build"] },
+  { pattern: /^src\/components\//, risk: "medium", reason: "Component code modified", checks: ["typecheck", "test"] },
+  { pattern: /\.css$/, risk: "low", reason: "Stylesheet modified", checks: ["test"] },
+  { pattern: /^README\.md$/, risk: "low", reason: "Documentation modified", checks: [] },
+  { pattern: /^docs\//, risk: "low", reason: "Documentation modified", checks: [] },
+  { pattern: /\.md$/, risk: "low", reason: "Markdown documentation modified", checks: [] },
+]
+
+const riskOrder: RiskLevel[] = ["low", "medium", "high", "critical"]
+
+export function analyzeDiffRisk(changedFiles: string[]): DiffRiskResult {
+  const matchedReasons: { risk: RiskLevel; reason: string; checks: string[] }[] = []
+
+  for (const file of changedFiles) {
+    for (const rule of riskRules) {
+      if (rule.pattern.test(file)) {
+        matchedReasons.push({ risk: rule.risk, reason: rule.reason, checks: rule.checks })
+        break
+      }
+    }
+  }
+
+  if (matchedReasons.length === 0) {
+    return { risk: "low", reasons: [], reviewRequired: false, requiredChecks: [] }
+  }
+
+  const highestRisk = matchedReasons.reduce<RiskLevel>((highest, match) => {
+    return riskOrder.indexOf(match.risk) > riskOrder.indexOf(highest) ? match.risk : highest
+  }, "low")
+
+  const reasons = [...new Set(matchedReasons.map((m) => m.reason))]
+  const requiredChecksSet = new Set<string>()
+  for (const match of matchedReasons) {
+    if (riskOrder.indexOf(match.risk) >= riskOrder.indexOf(highestRisk)) {
+      for (const check of match.checks) requiredChecksSet.add(check)
+    }
+  }
+
+  return {
+    risk: highestRisk,
+    reasons,
+    reviewRequired: highestRisk === "high" || highestRisk === "critical",
+    requiredChecks: [...requiredChecksSet],
+  }
+}
 
 export function createPlaceholderDiffRiskResult(): DiffRiskResult {
   return {
-    level: "low",
-    score: 0,
+    risk: "low",
     reasons: ["Diff risk analyzer placeholder is ready."],
+    reviewRequired: false,
+    requiredChecks: [],
   }
 }
 

@@ -58,4 +58,32 @@ describe("legacy config migration", () => {
 
     expect(existsSync(join(dir, ".bettercode", "quality-gate.json"))).toBe(true)
   })
+
+  test("does not overwrite edited migrated files on later commands", () => {
+    const dir = createFixture("migrate-preserve-edits", {
+      ".better-code/quality-gate.json": '{"legacy":true}',
+      ".better-code/brain/profile.md": "# Legacy Profile\n",
+    })
+
+    execSync(`bun ${cliPath} init`, { cwd: dir, stdio: "pipe" })
+    writeFileSync(join(dir, ".bettercode", "quality-gate.json"), '{"edited":true}')
+    writeFileSync(join(dir, ".bettercode", "brain", "profile.md"), "# Edited Profile\n")
+    execSync(`bun ${cliPath} brain init`, { cwd: dir, stdio: "pipe" })
+
+    expect(readFileSync(join(dir, ".bettercode", "quality-gate.json"), "utf8")).toBe('{"edited":true}')
+    expect(readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")).toBe("# Edited Profile\n")
+  })
+
+  test("repairs missing files without overwriting existing migrated files", () => {
+    const dir = createFixture("migrate-partial", {
+      ".better-code/quality-gate.json": '{"legacy":true}',
+      ".better-code/brain/profile.md": "# Legacy Profile\n",
+      ".bettercode/quality-gate.json": '{"edited":true}',
+    })
+
+    execSync(`bun ${cliPath} brain init`, { cwd: dir, stdio: "pipe" })
+
+    expect(readFileSync(join(dir, ".bettercode", "quality-gate.json"), "utf8")).toBe('{"edited":true}')
+    expect(readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")).toBe("# Legacy Profile\n")
+  })
 })

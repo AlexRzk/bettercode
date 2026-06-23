@@ -317,7 +317,7 @@ async function runShellCommand(rootPath: string, command: string) {
 }
 
 function shellCommandArgs(command: string) {
-  if (process.platform === "win32") return ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command]
+  if (process.platform === "win32") return ["cmd.exe", "/d", "/s", "/c", command]
   return ["sh", "-c", command]
 }
 

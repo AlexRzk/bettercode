@@ -269,8 +269,9 @@ function migrateLegacyConfig(repoRoot: string) {
 
     for (const entry of readdirSync(legacyDir)) {
       const src = join(legacyDir, entry)
+      const dest = join(newDir, entry)
       const srcStat = statSafe(src)
-      if (srcStat?.isFile()) copyFileSync(src, join(newDir, entry))
+      if (srcStat?.isFile() && !existsSync(dest)) copyFileSync(src, dest)
     }
 
     const brainSrc = join(legacyDir, "brain")
@@ -278,8 +279,9 @@ function migrateLegacyConfig(repoRoot: string) {
     if (brainStat?.isDirectory()) {
       for (const entry of readdirSync(brainSrc)) {
         const src = join(brainSrc, entry)
+        const dest = join(newDir, "brain", entry)
         const srcStat = statSafe(src)
-        if (srcStat?.isFile()) copyFileSync(src, join(newDir, "brain", entry))
+        if (srcStat?.isFile() && !existsSync(dest)) copyFileSync(src, dest)
       }
     }
   } catch {

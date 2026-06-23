@@ -7,6 +7,7 @@ import type {
   ProjectCommandName,
   ProjectInfo,
   ProjectType,
+  QualityGateScoreInput,
   QualityGateResult,
 } from "@better-code/shared"
 
@@ -29,6 +30,26 @@ const projectSignals: ProjectSignal[] = [
 const commandNames: ProjectCommandName[] = ["lint", "typecheck", "test", "build", "format", "format:check"]
 const gateCommandNames: ProjectCommandName[] = ["lint", "typecheck", "test", "build"]
 const maxOutputLength = 4000
+const defaultRules = {
+  failOnBuildError: true,
+  failOnTypecheckError: true,
+  failOnSecrets: true,
+  warnOnMissingTests: true,
+  reviewCriticalPath: true,
+}
+const defaultThresholds = {
+  passScore: 90,
+  warnScore: 70,
+  maxChangedFiles: 12,
+  maxDiffLines: 500,
+}
+const failedCheckPenalty: Partial<Record<ProjectCommandName, number>> = {
+  lint: 10,
+  typecheck: 25,
+  test: 25,
+  build: 30,
+  format: 5,
+}
 
 export function createPlaceholderQualityGateResult(): QualityGateResult {
   return {
@@ -111,18 +132,49 @@ export async function runQualityGate(rootPath: string): Promise<QualityGateResul
       durationMs: result.durationMs,
     })
   }
-  const blockingReasons = checks
-    .filter((check) => check.status === "FAIL")
-    .map((check) => `${check.name} failed`)
-
-  return {
-    status: blockingReasons.length > 0 ? "FAIL" : "PASS",
-    score: blockingReasons.length > 0 ? 0 : 100,
+  return scoreQualityGate({
     checks,
     warnings: diff.warnings,
-    blockingReasons,
     filesChanged: diff.filesChanged,
     diffLines: diff.diffLines,
+  })
+}
+
+export function scoreQualityGate(input: QualityGateScoreInput): QualityGateResult {
+  const rules = { ...defaultRules, ...input.rules }
+  const thresholds = { ...defaultThresholds, ...input.thresholds }
+  const blockingReasons = []
+  const warnings = [...(input.warnings ?? [])]
+  const failedChecks = input.checks.filter((check) => check.status === "FAIL")
+  const skippedTests = input.checks.some((check) => check.name === "test" && check.status === "SKIPPED")
+  const failedTypecheck = failedChecks.some((check) => check.name === "typecheck")
+  const failedBuild = failedChecks.some((check) => check.name === "build")
+
+  if (input.secretDetected && rules.failOnSecrets) blockingReasons.push("secret detected")
+  if (failedBuild && rules.failOnBuildError) blockingReasons.push("build failed")
+  if (failedTypecheck && rules.failOnTypecheckError) blockingReasons.push("typecheck failed")
+  if (skippedTests && rules.warnOnMissingTests) warnings.push("No test script found")
+
+  const penalty = failedChecks.reduce((total, check) => total + (failedCheckPenalty[check.name as ProjectCommandName] ?? 0), 0)
+  const missingTestPenalty = skippedTests && rules.warnOnMissingTests ? 5 : 0
+  const changedFilesPenalty = input.filesChanged > thresholds.maxChangedFiles ? 10 : 0
+  const diffLinesPenalty = input.diffLines > thresholds.maxDiffLines ? 10 : 0
+  const score = input.secretDetected ? 0 : Math.max(0, 100 - penalty - missingTestPenalty - changedFilesPenalty - diffLinesPenalty)
+  const status =
+    score < thresholds.warnScore || blockingReasons.length > 0
+      ? "FAIL"
+      : score < thresholds.passScore || warnings.length > 0
+        ? "WARN"
+        : "PASS"
+
+  return {
+    status,
+    score,
+    checks: input.checks,
+    warnings,
+    blockingReasons,
+    filesChanged: input.filesChanged,
+    diffLines: input.diffLines,
   }
 }
 

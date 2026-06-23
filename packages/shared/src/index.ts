@@ -1,4 +1,4 @@
-export type GateStatus = "PASS" | "FAIL" | "SKIPPED"
+export type GateStatus = "PASS" | "WARN" | "FAIL" | "SKIPPED"
 
 export type CheckStatus = "PASS" | "FAIL" | "SKIPPED"
 
@@ -50,6 +50,31 @@ export interface QualityGateResult {
   blockingReasons: string[]
   filesChanged: number
   diffLines: number
+}
+
+export interface QualityGateRules {
+  failOnBuildError: boolean
+  failOnTypecheckError: boolean
+  failOnSecrets: boolean
+  warnOnMissingTests: boolean
+  reviewCriticalPath: boolean
+}
+
+export interface QualityGateThresholds {
+  passScore: number
+  warnScore: number
+  maxChangedFiles: number
+  maxDiffLines: number
+}
+
+export interface QualityGateScoreInput {
+  checks: CheckResult[]
+  filesChanged: number
+  diffLines: number
+  warnings?: string[]
+  secretDetected?: boolean
+  rules?: Partial<QualityGateRules>
+  thresholds?: Partial<QualityGateThresholds>
 }
 
 export interface DiffRiskResult {

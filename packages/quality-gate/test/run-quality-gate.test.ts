@@ -23,7 +23,7 @@ describe("runQualityGate", () => {
     const result = await runQualityGate(join(fixtures, "fail"))
 
     expect(result.status).toBe("FAIL")
-    expect(result.score).toBe(0)
+    expect(result.score).toBe(70)
     expect(result.checks[0]?.status).toBe("PASS")
     expect(result.checks[1]?.status).toBe("FAIL")
     expect(result.blockingReasons).toEqual(["typecheck failed"])
@@ -32,7 +32,8 @@ describe("runQualityGate", () => {
   test("marks absent scripts as SKIPPED without inventing commands", async () => {
     const result = await runQualityGate(join(fixtures, "missing"))
 
-    expect(result.status).toBe("PASS")
+    expect(result.status).toBe("WARN")
+    expect(result.score).toBe(95)
     expect(result.checks).toEqual([
       { name: "lint", status: "SKIPPED", durationMs: 0, reason: "No lint script found" },
       { name: "typecheck", status: "SKIPPED", durationMs: 0, reason: "No typecheck script found" },

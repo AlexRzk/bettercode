@@ -1,5 +1,8 @@
 {
   "scripts": {
-    "lint": "bun -e \"console.error('x'.repeat(6000))\""
+    "lint": "bun -e \"console.error('x'.repeat(6000))\"",
+    "typecheck": "bun -e \"console.log('typecheck ok')\"",
+    "test": "bun -e \"console.log('test ok')\"",
+    "build": "bun -e \"console.log('build ok')\""
   }
 }

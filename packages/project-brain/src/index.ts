@@ -32,6 +32,71 @@ export async function brainInit(rootPath: string): Promise<string[]> {
 const startMarker = "<!-- better-code:generated-profile:start -->"
 const endMarker = "<!-- better-code:generated-profile:end -->"
 
+function isLegacyGeneratedProfile(content: string): boolean {
+  if (content.includes(startMarker) || content.includes(endMarker)) return false
+  const lower = content.toLowerCase()
+  return lower.startsWith("# project profile") && lower.includes("## stack") && lower.includes("## package manager") && lower.includes("## available commands")
+}
+
+const legacyGeneratedHeadings = ["## stack", "## package manager", "## available commands", "## critical paths"]
+const packageManagerValues = ["npm", "pnpm", "yarn", "bun"]
+
+function isLegacyGeneratedRow(line: string, activeHeading: string): boolean {
+  const trimmed = line.trim()
+  if (!trimmed.startsWith("- ")) return false
+
+  if (activeHeading === "## stack") {
+    return /^- (Type|Signals): /.test(trimmed)
+  }
+  if (activeHeading === "## package manager") {
+    const value = trimmed.slice(2).toLowerCase()
+    return packageManagerValues.includes(value)
+  }
+  if (activeHeading === "## available commands") {
+    return /^- \w[\w-]*: .+/.test(trimmed)
+  }
+  if (activeHeading === "## critical paths") {
+    return /^- .+/.test(trimmed)
+  }
+  return false
+}
+
+function migrateLegacyProfile(content: string): string {
+  const lines = content.split("\n")
+  const preserved: string[] = []
+  let activeHeading = ""
+
+  for (const line of lines) {
+    const lower = line.trim().toLowerCase()
+
+    if (lower === "# project profile") continue
+
+    if (legacyGeneratedHeadings.includes(lower)) {
+      activeHeading = lower
+      continue
+    }
+
+    if (lower.startsWith("## ")) {
+      activeHeading = ""
+      preserved.push(line)
+      continue
+    }
+
+    if (activeHeading && isLegacyGeneratedRow(line, activeHeading)) {
+      continue
+    }
+
+    if (activeHeading && lower !== "") {
+      activeHeading = ""
+    }
+
+    preserved.push(line)
+  }
+
+  const cleaned = preserved.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd()
+  return cleaned ? `${cleaned}\n\n` : ""
+}
+
 export async function brainUpdate(rootPath: string): Promise<{ profileUpdated: boolean; historyAppended: boolean }> {
   const dir = join(rootPath, brainDir)
   await mkdir(dir, { recursive: true })
@@ -88,6 +153,9 @@ export async function brainUpdate(rootPath: string): Promise<{ profileUpdated: b
       const before = existing.slice(0, startIdx)
       const after = existing.slice(endIdx + endMarker.length)
       await writeFile(profilePath, `${before}${generatedSection}${after}`)
+    } else if (isLegacyGeneratedProfile(existing)) {
+      const preserved = migrateLegacyProfile(existing)
+      await writeFile(profilePath, `# Project Profile\n\n${preserved}${generatedSection}`)
     } else {
       await writeFile(profilePath, `${existing.trimEnd()}\n\n${generatedSection}`)
     }

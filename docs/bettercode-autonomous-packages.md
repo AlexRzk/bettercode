@@ -41,7 +41,7 @@ Autorisations:
 
 `packages/quality-gate` détecte le type de projet, les commandes disponibles, exécute les checks utiles et calcule un score qualité.
 
-`packages/project-brain` maintient la mémoire projet BetterCode dans `.bettercode/brain`. Il doit préserver les notes utilisateur et remplacer uniquement ses sections générées.
+`packages/project-brain` maintient la mémoire BetterCode. Elle est separee en deux niveaux: une memoire projet dans `.bettercode/brain`, versionnee avec le depot, et une memoire globale utilisateur hors depot pour les preferences et leçons vraiment reutilisables. Les deux niveaux doivent rester strictement filtres; la memoire globale ne doit jamais devenir un journal brut de conversation.
 
 `packages/context-budget` réduit logs, diffs, texte long et sections de mémoire projet pour respecter un budget approximatif de contexte.
 
@@ -126,7 +126,14 @@ Règle: `runQualityGate` peut lancer des commandes projet, mais la logique de sc
 
 ### `@bettercode/project-brain`
 
-Rôle: créer, mettre à jour et rechercher la mémoire projet BetterCode.
+Rôle: créer, mettre à jour et rechercher la mémoire BetterCode.
+
+Ce package porte deux types de memoire:
+
+- Memoire projet: faits propres a un depot, stockes dans le projet.
+- Memoire globale: faits rares et reutilisables entre projets, stockes hors depot.
+
+La memoire projet est la source par defaut pour comprendre un codebase. La memoire globale est une couche supplementaire, plus restrictive, qui ne doit contenir que des preferences utilisateur, decisions d'architecture recurrentes, contraintes d'environnement stables, et apprentissages valides sur la facon de travailler.
 
 Contrats exposés:
 
@@ -135,14 +142,61 @@ Contrats exposés:
 - `brainSearch(rootPath: string, query: string)`
 - `SearchResult`
 
-Fichiers gérés:
+Fichiers projet geres:
 
 - `.bettercode/brain/profile.md`
 - `.bettercode/brain/history.md`
 - `.bettercode/last-gate-result.json`
 - `.bettercode/quality-gate.json`
 
-Règle critique: les sections générées doivent être clairement bornées par les marqueurs BetterCode et les notes utilisateur doivent être préservées.
+Fichiers globaux cibles:
+
+- OS par defaut: dossier de config utilisateur BetterCode, par exemple `~/.config/bettercode/brain`
+- Windows: dossier de config utilisateur BetterCode, par exemple `%APPDATA%/bettercode/brain`
+- Format cible: fichiers texte structures et petits, pas une base opaque obligatoire au debut
+
+Memoire globale proposee:
+
+- `preferences.md`: preferences utilisateur durables et transverses
+- `architecture.md`: decisions techniques reutilisables entre projets BetterCode
+- `environment.md`: contraintes stables de machine, shell, OS, outils et workflows
+- `lessons.md`: apprentissages valides apres erreur repetee ou correction confirmee
+
+Regle critique pour la memoire projet: les sections generees doivent etre clairement bornees par les marqueurs BetterCode et les notes utilisateur doivent etre preservees.
+
+Regle critique pour la memoire globale: aucune information ne doit etre ecrite globalement sans passer par une admission stricte.
+
+Admission en memoire globale:
+
+- Accepter seulement les informations reutilisables dans plusieurs projets ou plusieurs sessions.
+- Refuser les details temporaires, logs, erreurs ponctuelles, hypothèses non verifiees, chemins internes a un seul projet, todo courts, outputs de commandes, et decisions encore experimentales.
+- Exiger une provenance courte: source humaine, observation locale, test passe, correction validee, ou decision d'architecture.
+- Exiger une formulation compacte, actionnable et stable.
+- Preferer mettre a jour une entree existante plutot qu'ajouter une nouvelle entree proche.
+- Supprimer ou remplacer les entrees obsoletes quand une information plus recente les contredit.
+
+Exemples acceptables en memoire globale:
+
+- "L'utilisateur prefere des plans d'implementation assez explicites pour etre executes par un agent IA."
+- "Dans ce workspace, ne pas lancer les tests BetterCode depuis la racine; les lancer depuis les packages."
+- "BetterCode doit rester une couche wrapper/plugin au-dessus d'OpenCode quand c'est possible."
+
+Exemples refuses en memoire globale:
+
+- "Le test X a echoue aujourd'hui avec telle stacktrace."
+- "Penser a modifier tel fichier dans ce projet."
+- "Le modele a suggere telle hypothese non verifiee."
+- "Copie brute d'un log, d'un diff ou d'une conversation."
+
+API cible a ajouter apres cette phase:
+
+- `globalBrainInit(configPath?: string)`
+- `globalBrainSearch(query: string, options?)`
+- `proposeGlobalMemory(input)`
+- `acceptGlobalMemory(proposal)`
+- `pruneGlobalMemory(options?)`
+
+Ces APIs doivent separer proposition et ecriture. Par defaut, le systeme peut proposer une memoire globale, mais l'ecriture automatique doit rester desactivee tant que les criteres d'admission, deduplication et suppression ne sont pas bien testes.
 
 ### `@bettercode/context-budget`
 
@@ -229,6 +283,7 @@ Critère de passage:
 
 - Chaque fonctionnalité principale est exportée depuis `src/index.ts`.
 - Les types partagés sont exportés depuis `@bettercode/shared`.
+- Les futures APIs de memoire globale doivent etre exportees depuis `@bettercode/project-brain` sans importer les internals OpenCode.
 
 5. Vérifier l'absence de couplage OpenCode.
 
@@ -297,6 +352,7 @@ La phase est complète quand:
   - `analyzeDiffRisk`
   - `analyzeGitDiff`
   - `createPlaceholderBenchmarkResult`
+- La memoire globale BetterCode est documentee comme une extension restrictive de `project-brain`, meme si son implementation arrive dans une phase dediee.
 - Les tests et typechecks ciblés passent.
 
 ## Risques à surveiller
@@ -306,6 +362,8 @@ Le risque principal est de réintroduire un couplage à OpenCode en important un
 Le deuxième risque est de refaire un rebrand global. Cette phase ne doit pas remplacer OpenCode partout. Elle doit seulement stabiliser les packages BetterCode autonomes et leurs noms publics.
 
 Le troisième risque est d'avoir des APIs appelables uniquement depuis une CLI. Les packages doivent rester utilisables par un plugin, un wrapper, des tests ou un futur orchestrateur BetterCode.
+
+Le quatrieme risque est de transformer la memoire globale en poubelle. La memoire globale doit etre plus difficile a ecrire que la memoire projet, pas plus facile. Elle doit avoir un seuil d'admission, une provenance, une deduplication et une strategie de pruning avant toute ecriture automatique.
 
 ## Phase suivante
 

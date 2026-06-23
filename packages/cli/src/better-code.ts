@@ -4,6 +4,7 @@ import { mkdir, stat } from "node:fs/promises"
 import { dirname, join, parse } from "node:path"
 import { runQualityGate } from "@better-code/quality-gate"
 import { brainInit, brainUpdate, brainSearch } from "@better-code/project-brain"
+import { generateSpec } from "./spec"
 
 type PlaceholderCommand = {
   path: string[]
@@ -43,6 +44,7 @@ const commands: PlaceholderCommand[] = [
   { path: ["brain", "init"], description: "Initialize the project brain." },
   { path: ["brain", "update"], description: "Update the project brain profile." },
   { path: ["brain", "search", "<query>"], description: "Search the project brain by keyword." },
+  { path: ["spec", "<description>"], description: "Generate a mini-spec before modification." },
   { path: ["benchmark", "run"], description: "Run comparative benchmarks." },
   { path: ["report"], description: "Generate a Better Code report." },
 ]
@@ -104,6 +106,13 @@ if (args[0] === "brain" && args[1] === "search" && args.length >= 3) {
       console.log(`  ${r.file}:${r.line} - ${r.content}`)
     }
   }
+  process.exit(0)
+}
+
+if (args[0] === "spec" && args.length >= 2) {
+  const description = args.slice(1).join(" ")
+  const spec = await generateSpec(root, description)
+  console.log(JSON.stringify(spec, null, 2))
   process.exit(0)
 }
 

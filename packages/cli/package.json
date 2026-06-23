@@ -9,7 +9,8 @@
     "lildax": "./bin/lildax.cjs"
   },
   "files": [
-    "bin"
+    "bin",
+    "src/better-code.ts"
   ],
   "scripts": {
     "build": "bun run script/build.ts",

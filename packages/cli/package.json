@@ -15,6 +15,7 @@
   "scripts": {
     "build": "bun run script/build.ts",
     "dev": "bun run src/index.ts",
+    "test": "bun test",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
     "@opencode-ai/core": "workspace:*",
     "@better-code/quality-gate": "workspace:*",
     "@better-code/project-brain": "workspace:*",
+    "@better-code/diff-risk": "workspace:*",
     "@opencode-ai/sdk": "workspace:*",
     "@opencode-ai/server": "workspace:*",
     "@opencode-ai/tui": "workspace:*",

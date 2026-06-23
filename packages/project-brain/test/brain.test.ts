@@ -237,6 +237,41 @@ describe("brainUpdate", () => {
     expect(startCount).toBe(1)
   })
 
+  test("preserves bullet notes after generated commands once custom notes start", async () => {
+    const dir = createFixture("update-command-bullets")
+    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    writeFileSync(
+      join(dir, ".better-code", "brain", "profile.md"),
+      [
+        "# Project Profile",
+        "",
+        "## Stack",
+        "- Type: node",
+        "",
+        "## Package Manager",
+        "- npm",
+        "",
+        "## Available Commands",
+        "- lint: npm run lint",
+        "",
+        "Operational notes:",
+        "- owner: platform",
+        "- escalation: qa",
+        "",
+      ].join("\n"),
+    )
+
+    await brainUpdate(dir)
+
+    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    expect(profile).toContain("Operational notes:")
+    expect(profile).toContain("- owner: platform")
+    expect(profile).toContain("- escalation: qa")
+    expect(profile).not.toContain("- lint: npm run lint")
+    const startCount = (profile.match(/<!-- better-code:generated-profile:start -->/g) || []).length
+    expect(startCount).toBe(1)
+  })
+
   test("preserves unheaded notes after generated stack rows", async () => {
     const dir = createFixture("update-unheaded-stack")
     mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
@@ -268,6 +303,47 @@ describe("brainUpdate", () => {
     expect(profile).not.toContain("old-signal")
     expect(profile).toContain("<!-- better-code:generated-profile:start -->")
     expect(profile).toContain("<!-- better-code:generated-profile:end -->")
+  })
+
+  test("preserves bullet notes after generated critical paths once custom notes start", async () => {
+    const dir = createFixture("update-critical-bullets")
+    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    mkdirSync(join(dir, ".better-code"), { recursive: true })
+    writeFileSync(join(dir, ".better-code", "quality-gate.json"), JSON.stringify({ criticalPaths: ["src/auth/**"] }))
+    writeFileSync(
+      join(dir, ".better-code", "brain", "profile.md"),
+      [
+        "# Project Profile",
+        "",
+        "## Stack",
+        "- Type: node",
+        "",
+        "## Package Manager",
+        "- npm",
+        "",
+        "## Available Commands",
+        "- lint: npm run lint",
+        "",
+        "## Critical Paths",
+        "- old/generated/**",
+        "",
+        "Critical path owner notes:",
+        "- owner: security",
+        "- review cadence: weekly",
+        "",
+      ].join("\n"),
+    )
+
+    await brainUpdate(dir)
+
+    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    expect(profile).toContain("Critical path owner notes:")
+    expect(profile).toContain("- owner: security")
+    expect(profile).toContain("- review cadence: weekly")
+    expect(profile).not.toContain("- old/generated/**")
+    expect(profile).toContain("- src/auth/**")
+    const startCount = (profile.match(/<!-- better-code:generated-profile:start -->/g) || []).length
+    expect(startCount).toBe(1)
   })
 
   test("preserves custom markerless notes that are not legacy generated", async () => {

@@ -86,6 +86,10 @@ function migrateLegacyProfile(content: string): string {
       continue
     }
 
+    if (activeHeading && lower !== "") {
+      activeHeading = ""
+    }
+
     preserved.push(line)
   }
 

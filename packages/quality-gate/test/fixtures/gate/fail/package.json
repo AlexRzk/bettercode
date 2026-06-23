@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "lint": "bun -e \"console.log('lint ok')\"",
+    "typecheck": "bun -e \"console.error('typecheck failed'); process.exit(1)\""
+  }
+}

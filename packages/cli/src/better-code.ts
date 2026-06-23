@@ -2,6 +2,7 @@
 
 import { mkdir, stat } from "node:fs/promises"
 import { dirname, join, parse } from "node:path"
+import { runQualityGate } from "@better-code/quality-gate"
 
 type PlaceholderCommand = {
   path: string[]
@@ -57,6 +58,18 @@ if (!command) {
 if (command.path[0] === "init") {
   await initBetterCode(process.cwd())
   process.exit(0)
+}
+
+if (command.path[0] === "gate" && command.path[1] === "run") {
+  const result = await runQualityGate(process.cwd())
+  console.log(`Better Code quality gate: ${result.status}`)
+  console.log(`Score: ${result.score}`)
+  for (const check of result.checks) {
+    const detail = check.status === "SKIPPED" ? ` - ${check.reason}` : ` - ${check.command} (${check.durationMs}ms)`
+    console.log(`${check.status} ${check.name}${detail}`)
+  }
+  console.log(JSON.stringify(result, null, 2))
+  process.exit(result.status === "FAIL" ? 1 : 0)
 }
 
 console.log(`better-code ${command.path.join(" ")}`)

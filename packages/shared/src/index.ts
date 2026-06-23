@@ -1,6 +1,6 @@
-export type GateStatus = "passed" | "warning" | "failed" | "skipped"
+export type GateStatus = "PASS" | "FAIL" | "SKIPPED"
 
-export type CheckStatus = "passed" | "warning" | "failed" | "skipped"
+export type CheckStatus = "PASS" | "FAIL" | "SKIPPED"
 
 export type RiskLevel = "low" | "medium" | "high" | "critical"
 
@@ -34,17 +34,22 @@ export interface ProjectCommand {
 export type AvailableCommands = Partial<Record<ProjectCommandName, ProjectCommand>>
 
 export interface CheckResult {
-  id: string
   name: string
   status: CheckStatus
-  message?: string
-  details?: Record<string, unknown>
+  command?: string
+  output?: string
+  durationMs: number
+  reason?: string
 }
 
 export interface QualityGateResult {
   status: GateStatus
+  score: number
   checks: CheckResult[]
-  summary?: string
+  warnings: string[]
+  blockingReasons: string[]
+  filesChanged: number
+  diffLines: number
 }
 
 export interface DiffRiskResult {

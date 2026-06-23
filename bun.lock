@@ -103,6 +103,7 @@
         "lildax": "./bin/lildax.cjs",
       },
       "dependencies": {
+        "@better-code/quality-gate": "workspace:*",
         "@effect/platform-node": "catalog:",
         "@opencode-ai/core": "workspace:*",
         "@opencode-ai/sdk": "workspace:*",

@@ -26,12 +26,18 @@ const projectSignals: ProjectSignal[] = [
 ]
 
 const commandNames: ProjectCommandName[] = ["lint", "typecheck", "test", "build", "format", "format:check"]
+const gateCommandNames: ProjectCommandName[] = ["lint", "typecheck", "test", "build"]
+const maxOutputLength = 4000
 
 export function createPlaceholderQualityGateResult(): QualityGateResult {
   return {
-    status: "skipped",
+    status: "SKIPPED",
+    score: 0,
     checks: [],
-    summary: "Quality gate placeholder is ready.",
+    warnings: [],
+    blockingReasons: [],
+    filesChanged: 0,
+    diffLines: 0,
   }
 }
 
@@ -79,6 +85,45 @@ export function detectProject(rootPath: string): ProjectInfo {
   }
 }
 
+export async function runQualityGate(rootPath: string): Promise<QualityGateResult> {
+  const commands = detectAvailableCommands(rootPath)
+  const checks = []
+  for (const name of gateCommandNames) {
+    const command = commands[name]?.command
+    if (!command) {
+      checks.push({
+        name,
+        status: "SKIPPED" as const,
+        durationMs: 0,
+        reason: `No ${name} script found`,
+      })
+      continue
+    }
+
+    const result = await runShellCommand(rootPath, command)
+    checks.push({
+      name,
+      status: result.exitCode === 0 ? ("PASS" as const) : ("FAIL" as const),
+      command,
+      output: result.output,
+      durationMs: result.durationMs,
+    })
+  }
+  const blockingReasons = checks
+    .filter((check) => check.status === "FAIL")
+    .map((check) => `${check.name} failed`)
+
+  return {
+    status: blockingReasons.length > 0 ? "FAIL" : "PASS",
+    score: blockingReasons.length > 0 ? 0 : 100,
+    checks,
+    warnings: [],
+    blockingReasons,
+    filesChanged: 0,
+    diffLines: 0,
+  }
+}
+
 function readPackageJson(rootPath: string): { scripts?: Record<string, unknown> } | undefined {
   if (!existsSync(join(rootPath, "package.json"))) return undefined
   try {
@@ -93,4 +138,43 @@ function formatScriptCommand(packageManager: PackageManager, name: ProjectComman
   if (packageManager === "pnpm") return `pnpm ${name}`
   if (packageManager === "yarn") return `yarn ${name}`
   return `bun run ${name}`
+}
+
+async function runShellCommand(rootPath: string, command: string) {
+  const started = performance.now()
+  try {
+    const child = Bun.spawn(shellCommandArgs(command), {
+      cwd: rootPath,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+      child.exited,
+    ])
+
+    return {
+      exitCode,
+      output: trimOutput(`${stdout}${stderr ? `\n${stderr}` : ""}`),
+      durationMs: Math.round(performance.now() - started),
+    }
+  } catch (error) {
+    return {
+      exitCode: 1,
+      output: error instanceof Error ? error.message : "Command failed before producing output.",
+      durationMs: Math.round(performance.now() - started),
+    }
+  }
+}
+
+function shellCommandArgs(command: string) {
+  if (process.platform === "win32") return ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command]
+  return ["sh", "-c", command]
+}
+
+function trimOutput(output: string) {
+  const normalized = output.trim()
+  if (normalized.length <= maxOutputLength) return normalized
+  return `${normalized.slice(0, maxOutputLength)}\n[output truncated]`
 }

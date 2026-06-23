@@ -58,6 +58,16 @@ export interface DiffRiskResult {
   reasons: string[]
 }
 
+export interface GitDiffSummary {
+  changedFiles: string[]
+  filesChanged: number
+  diffLines: number
+  addedLines: number
+  deletedLines: number
+  warnings: string[]
+  stat: string
+}
+
 export interface BenchmarkResult {
   id: string
   name: string

@@ -13,6 +13,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@better-code/diff-risk": "workspace:*",
     "@better-code/shared": "workspace:*"
   },
   "devDependencies": {

@@ -694,6 +694,7 @@
     "packages/quality-gate": {
       "name": "@better-code/quality-gate",
       "dependencies": {
+        "@better-code/diff-risk": "workspace:*",
         "@better-code/shared": "workspace:*",
       },
       "devDependencies": {

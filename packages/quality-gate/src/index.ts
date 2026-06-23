@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
+import { analyzeGitDiff } from "@better-code/diff-risk"
 import type {
   AvailableCommands,
   PackageManager,
@@ -87,6 +88,7 @@ export function detectProject(rootPath: string): ProjectInfo {
 
 export async function runQualityGate(rootPath: string): Promise<QualityGateResult> {
   const commands = detectAvailableCommands(rootPath)
+  const diff = await analyzeGitDiff(rootPath)
   const checks = []
   for (const name of gateCommandNames) {
     const command = commands[name]?.command
@@ -117,10 +119,10 @@ export async function runQualityGate(rootPath: string): Promise<QualityGateResul
     status: blockingReasons.length > 0 ? "FAIL" : "PASS",
     score: blockingReasons.length > 0 ? 0 : 100,
     checks,
-    warnings: [],
+    warnings: diff.warnings,
     blockingReasons,
-    filesChanged: 0,
-    diffLines: 0,
+    filesChanged: diff.filesChanged,
+    diffLines: diff.diffLines,
   }
 }
 

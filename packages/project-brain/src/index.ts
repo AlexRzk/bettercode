@@ -29,6 +29,9 @@ export async function brainInit(rootPath: string): Promise<string[]> {
   return created
 }
 
+const startMarker = "<!-- better-code:generated-profile:start -->"
+const endMarker = "<!-- better-code:generated-profile:end -->"
+
 export async function brainUpdate(rootPath: string): Promise<{ profileUpdated: boolean; historyAppended: boolean }> {
   const dir = join(rootPath, brainDir)
   await mkdir(dir, { recursive: true })
@@ -37,10 +40,9 @@ export async function brainUpdate(rootPath: string): Promise<{ profileUpdated: b
   const packageManager = detectPackageManager(rootPath)
   const commands = detectAvailableCommands(rootPath)
 
-  const profileLines = [
-    "# Project Profile",
-    "",
-    `## Stack`,
+  const generatedLines = [
+    startMarker,
+    "## Stack",
     `- Type: ${project.type}`,
     `- Signals: ${project.signals.length > 0 ? project.signals.join(", ") : "none detected"}`,
     "",
@@ -52,7 +54,7 @@ export async function brainUpdate(rootPath: string): Promise<{ profileUpdated: b
 
   for (const [name, cmd] of Object.entries(commands)) {
     if (cmd && typeof cmd === "object" && "command" in cmd) {
-      profileLines.push(`- ${name}: ${(cmd as { command: string }).command}`)
+      generatedLines.push(`- ${name}: ${(cmd as { command: string }).command}`)
     }
   }
 
@@ -61,9 +63,9 @@ export async function brainUpdate(rootPath: string): Promise<{ profileUpdated: b
     try {
       const config = JSON.parse(readFileSync(configPath, "utf8"))
       if (Array.isArray(config.criticalPaths) && config.criticalPaths.length > 0) {
-        profileLines.push("", "## Critical Paths")
+        generatedLines.push("", "## Critical Paths")
         for (const p of config.criticalPaths) {
-          profileLines.push(`- ${p}`)
+          generatedLines.push(`- ${p}`)
         }
       }
     } catch {
@@ -71,9 +73,25 @@ export async function brainUpdate(rootPath: string): Promise<{ profileUpdated: b
     }
   }
 
-  profileLines.push("")
+  generatedLines.push(endMarker, "")
+  const generatedSection = generatedLines.join("\n")
+
   const profilePath = join(dir, "profile.md")
-  await writeFile(profilePath, profileLines.join("\n"))
+  if (!existsSync(profilePath)) {
+    await writeFile(profilePath, `# Project Profile\n\n${generatedSection}`)
+  } else {
+    const existing = readFileSync(profilePath, "utf8")
+    const startIdx = existing.indexOf(startMarker)
+    const endIdx = existing.indexOf(endMarker)
+
+    if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+      const before = existing.slice(0, startIdx)
+      const after = existing.slice(endIdx + endMarker.length)
+      await writeFile(profilePath, `${before}${generatedSection}${after}`)
+    } else {
+      await writeFile(profilePath, `${existing.trimEnd()}\n\n${generatedSection}`)
+    }
+  }
 
   let historyAppended = false
   const gateResultPath = join(rootPath, ".better-code", "last-gate-result.json")

@@ -77,6 +77,57 @@ describe("brainUpdate", () => {
     await brainUpdate(dir)
 
     const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    expect(profile).toContain("Custom content")
+    expect(profile).toContain("<!-- better-code:generated-profile:start -->")
+    expect(profile).toContain("<!-- better-code:generated-profile:end -->")
+    expect(profile).toContain("## Stack")
+  })
+
+  test("replaces generated section when markers exist", async () => {
+    const dir = createFixture("update-replace")
+    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    writeFileSync(
+      join(dir, ".better-code", "brain", "profile.md"),
+      [
+        "# My Notes",
+        "",
+        "Important observation:",
+        "- this project uses bun",
+        "",
+        "<!-- better-code:generated-profile:start -->",
+        "## Old Stack",
+        "- Type: old-type",
+        "<!-- better-code:generated-profile:end -->",
+        "",
+        "Footer note stays.",
+        "",
+      ].join("\n"),
+    )
+
+    await brainUpdate(dir)
+
+    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    expect(profile).toContain("# My Notes")
+    expect(profile).toContain("Important observation:")
+    expect(profile).toContain("this project uses bun")
+    expect(profile).toContain("Footer note stays.")
+    expect(profile).toContain("## Stack")
+    expect(profile).not.toContain("## Old Stack")
+    expect(profile).not.toContain("old-type")
+    const startCount = (profile.match(/<!-- better-code:generated-profile:start -->/g) || []).length
+    expect(startCount).toBe(1)
+  })
+
+  test("creates profile with markers when absent", async () => {
+    const dir = createFixture("update-new-profile")
+    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+
+    await brainUpdate(dir)
+
+    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    expect(profile).toContain("# Project Profile")
+    expect(profile).toContain("<!-- better-code:generated-profile:start -->")
+    expect(profile).toContain("<!-- better-code:generated-profile:end -->")
     expect(profile).toContain("## Stack")
   })
 

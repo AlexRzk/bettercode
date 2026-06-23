@@ -1,4 +1,4 @@
-import type { BenchmarkResult } from "@better-code/shared"
+import type { BenchmarkResult } from "@bettercode/shared"
 
 export function createPlaceholderBenchmarkResult(): BenchmarkResult {
   return {

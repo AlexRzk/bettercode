@@ -43,13 +43,27 @@ describe("compressLogs", () => {
   test("result does not exceed budget", () => {
     const lines = Array.from({ length: 500 }, (_, i) => `log line ${i}: some message`).join("\n")
     const result = compressLogs(lines, { maxTokens: 100 })
-    expect(approxTokens(result)).toBeLessThanOrEqual(110)
+    expect(approxTokens(result)).toBeLessThanOrEqual(100)
   })
 
   test("result does not exceed budget when many errors", () => {
     const lines = Array.from({ length: 500 }, (_, i) => `Error ${i}: failed at step ${i}`).join("\n")
     const result = compressLogs(lines, { maxTokens: 50 })
-    expect(approxTokens(result)).toBeLessThanOrEqual(60)
+    expect(approxTokens(result)).toBeLessThanOrEqual(50)
+  })
+
+  test("accounts for truncation marker in tight rest budget", () => {
+    const input = `FAIL: important line\n${"info ".repeat(100)}`
+    const result = compressLogs(input, { maxTokens: 10 })
+    expect(result).toContain("[truncated]")
+    expect(approxTokens(result)).toBeLessThanOrEqual(10)
+  })
+
+  test("accounts for truncation marker when important lines exceed budget", () => {
+    const lines = Array.from({ length: 100 }, (_, i) => `Error ${i}: failed with critical stack`).join("\n")
+    const result = compressLogs(lines, { maxTokens: 12 })
+    expect(result).toContain("[truncated]")
+    expect(approxTokens(result)).toBeLessThanOrEqual(12)
   })
 })
 
@@ -67,7 +81,7 @@ describe("compressDiff", () => {
     const hunk = Array.from({ length: 200 }, (_, i) => `+line ${i}`).join("\n")
     const input = `diff --git a/file.ts b/file.ts\n@@ -1 +1 @@\n${hunk}`
     const result = compressDiff(input, { maxTokens: 100 })
-    expect(result.length).toBeLessThanOrEqual(400 + 50)
+    expect(approxTokens(result)).toBeLessThanOrEqual(100)
     expect(result).toContain("[diff truncated]")
   })
 
@@ -84,6 +98,13 @@ describe("compressDiff", () => {
     const result = compressDiff(input, { maxTokens: 50 })
     expect(result.length).toBeLessThanOrEqual(input.length)
   })
+
+  test("accounts for diff truncation marker in tight budget", () => {
+    const hunk = Array.from({ length: 100 }, (_, i) => `+line ${i}`).join("\n")
+    const result = compressDiff(`diff --git a/file.ts b/file.ts\n@@ -1 +1 @@\n${hunk}`, { maxTokens: 12 })
+    expect(result).toContain("[diff truncated]")
+    expect(approxTokens(result)).toBeLessThanOrEqual(12)
+  })
 })
 
 describe("limitTextByBudget", () => {
@@ -98,14 +119,20 @@ describe("limitTextByBudget", () => {
   test("truncates long text", () => {
     const text = "a".repeat(1000)
     const result = limitTextByBudget(text, 100)
-    expect(approxTokens(result)).toBeLessThanOrEqual(110)
+    expect(approxTokens(result)).toBeLessThanOrEqual(100)
     expect(result).toContain("[truncated]")
   })
 
   test("result does not exceed budget", () => {
     const text = "word ".repeat(500)
     const result = limitTextByBudget(text, 50)
-    expect(approxTokens(result)).toBeLessThanOrEqual(60)
+    expect(approxTokens(result)).toBeLessThanOrEqual(50)
+  })
+
+  test("accounts for truncation marker in tight budget", () => {
+    const result = limitTextByBudget("word ".repeat(100), 8)
+    expect(result).toContain("[truncated]")
+    expect(approxTokens(result)).toBeLessThanOrEqual(8)
   })
 })
 

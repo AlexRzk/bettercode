@@ -50,6 +50,13 @@ function isImportantLogLine(line: string): boolean {
   return errorPatterns.some((p) => p.test(line))
 }
 
+function truncateWithMarker(text: string, maxChars: number, marker: string): string {
+  if (maxChars <= 0) return ""
+  if (text.length <= maxChars) return text
+  if (marker.length >= maxChars) return text.slice(0, maxChars).trimEnd()
+  return `${text.slice(0, maxChars - marker.length).trimEnd()}${marker}`
+}
+
 export function compressLogs(text: string, options?: CompressOptions): string {
   if (!text) return ""
   const maxTokens = options?.maxTokens ?? defaultBudget.maxLogTokens
@@ -69,16 +76,16 @@ export function compressLogs(text: string, options?: CompressOptions): string {
 
   const importantText = important.join("\n")
   if (approxTokens(importantText) <= maxTokens) {
-    const remaining = maxChars - importantText.length
+    const restText = rest.join("\n")
+    const remaining = maxChars - importantText.length - (importantText && restText ? 1 : 0)
     if (remaining > 0) {
-      const restText = rest.join("\n")
-      const trimmed = restText.length > remaining ? restText.slice(0, remaining) + "\n[truncated]" : restText
+      const trimmed = truncateWithMarker(restText, remaining, "\n[truncated]")
       return `${importantText}\n${trimmed}`.trim()
     }
     return importantText.trim()
   }
 
-  return importantText.slice(0, maxChars).trim() + "\n[truncated]"
+  return truncateWithMarker(importantText, maxChars, "\n[truncated]").trim()
 }
 
 export function compressDiff(text: string, options?: CompressOptions): string {
@@ -121,14 +128,14 @@ export function compressDiff(text: string, options?: CompressOptions): string {
   const result = kept.join("\n")
   if (result.length <= maxChars) return result
 
-  return result.slice(0, maxChars).trim() + "\n[diff truncated]"
+  return truncateWithMarker(result, maxChars, "\n[diff truncated]").trim()
 }
 
 export function limitTextByBudget(text: string, maxApproxTokens: number): string {
   if (!text) return ""
   const maxChars = maxApproxTokens * 4
   if (text.length <= maxChars) return text
-  return text.slice(0, maxChars).trim() + "\n[truncated]"
+  return truncateWithMarker(text, maxChars, "\n[truncated]").trim()
 }
 
 export function selectRelevantBrainSections(query: string, brainText: string, maxApproxTokens: number): string {

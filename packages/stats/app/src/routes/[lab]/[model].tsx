@@ -1,6 +1,6 @@
 import "../index.css"
 import { Link, Meta, Title } from "@solidjs/meta"
-import { ProviderIcon } from "@opencode-ai/ui/provider-icon"
+import { ProviderIcon } from "@bettercode/ui/provider-icon"
 import { geoEquirectangular, geoPath } from "d3-geo"
 import { scaleSqrt } from "d3-scale"
 import countryCodesSource from "i18n-iso-countries/codes.json?raw"
@@ -13,7 +13,7 @@ import {
   type ModelUsagePoint,
   type StatsModelData,
   type UsageRange,
-} from "@opencode-ai/stats-core/domain/home"
+} from "@bettercode/stats-core/domain/home"
 import { createAsync, query, useParams } from "@solidjs/router"
 import { createMemo, createSignal, For, onMount, Show, type JSX } from "solid-js"
 import { getRequestEvent } from "solid-js/web"
@@ -38,9 +38,9 @@ import {
   type ThemePreference,
 } from "../stats-shell"
 
-const statsCanonicalBaseUrl = "https://opencode.ai/data/"
+const statsCanonicalBaseUrl = "https://bettercode.ai/data/"
 const statsUnfurlPath = "banner.png"
-const statsUnfurlAlt = "OpenCode Data wordmark on a dark patterned background"
+const statsUnfurlAlt = "BetterCode Data wordmark on a dark patterned background"
 const statsUnfurlUrl = new URL(statsUnfurlPath, statsCanonicalBaseUrl).toString()
 const modelHeaderLinks: readonly HeaderLink[] = [
   { href: "#overview", label: "Overview" },
@@ -121,10 +121,10 @@ export default function StatsModel() {
   const [themePreference, setThemePreference] = createSignal<ThemePreference>("system")
   const modelName = createMemo(() => catalogEntry()?.name ?? stats()?.model ?? modelParam() ?? "Model")
   const labName = createMemo(() => formatCatalogLabName(catalogEntry()?.lab ?? stats()?.provider ?? labParam()))
-  const modelTitle = createMemo(() => `${modelName()} Usage, Cost & Rank | OpenCode Data`)
+  const modelTitle = createMemo(() => `${modelName()} Usage, Cost & Rank | BetterCode Data`)
   const modelDescription = createMemo(
     () =>
-      `View ${modelName()} OpenCode Go usage data, including token volume, weekly rank, token mix, costs, cache ratio, sessions, geo breakdowns, and peer models.`,
+      `View ${modelName()} BetterCode Go usage data, including token volume, weekly rank, token mix, costs, cache ratio, sessions, geo breakdowns, and peer models.`,
   )
   const modelUrl = createMemo(() =>
     new URL(
@@ -153,7 +153,7 @@ export default function StatsModel() {
       <Meta name="description" content={modelDescription()} />
       <Link rel="canonical" href={modelUrl()} />
       <Meta property="og:type" content="website" />
-      <Meta property="og:site_name" content="OpenCode" />
+      <Meta property="og:site_name" content="BetterCode" />
       <Meta property="og:title" content={modelTitle()} />
       <Meta property="og:description" content={modelDescription()} />
       <Meta property="og:url" content={modelUrl()} />
@@ -258,14 +258,14 @@ function ModelHero(props: { data: StatsModelData | null; catalog: ModelCatalogEn
           <Show
             when={props.data}
             fallback={
-              <p>Model facts from the shared model index. OpenCode Go usage appears once this model has activity.</p>
+              <p>Model facts from the shared model index. BetterCode Go usage appears once this model has activity.</p>
             }
           >
             {(data) => (
               <p>
                 {data().rank === null
-                  ? "Unranked across last week's OpenCode Go usage"
-                  : `Ranked #${data().rank} across last week's OpenCode Go usage`}{" "}
+                  ? "Unranked across last week's BetterCode Go usage"
+                  : `Ranked #${data().rank} across last week's BetterCode Go usage`}{" "}
                 with {formatPercent(data().tokenShare)} of observed 2M volume.
               </p>
             )}
@@ -299,7 +299,7 @@ function ModelCatalogCallout(props: { catalog: ModelCatalogEntry | null }) {
     <div data-component="model-rank-panel">
       <span>Model Profile</span>
       <strong>{props.catalog?.releaseDate ? formatCatalogDate(props.catalog.releaseDate) : "Listed"}</strong>
-      <p>No OpenCode Go usage in the current data window.</p>
+      <p>No BetterCode Go usage in the current data window.</p>
     </div>
   )
 }
@@ -330,11 +330,11 @@ function CatalogDatum(props: { label: string; value: string }) {
 function ModelOverview(props: { data: StatsModelData | null }) {
   return (
     <section data-section="model-panel">
-      <SectionTitle title="Overview" description="Recent OpenCode Go tokens, unique users, and market position." />
+      <SectionTitle title="Overview" description="Recent BetterCode Go tokens, unique users, and market position." />
       <Show
         when={props.data}
         fallback={
-          <ModelEmptyState title="No usage summary" description="This model has no OpenCode Go usage rows yet." />
+          <ModelEmptyState title="No usage summary" description="This model has no BetterCode Go usage rows yet." />
         }
       >
         {(data) => (
@@ -363,7 +363,7 @@ function ModelOverview(props: { data: StatsModelData | null }) {
 function ModelUsageSection(props: { data: ModelUsagePoint[] }) {
   return (
     <section id="usage" data-section="model-panel">
-      <SectionTitle title="Usage" description="Daily OpenCode Go token volume over the recent two-month window." />
+      <SectionTitle title="Usage" description="Daily BetterCode Go token volume over the recent two-month window." />
       <Show
         when={props.data.some((item) => item.tokens > 0)}
         fallback={<ModelEmptyState title="No usage" description="No usage landed in the current window." />}
@@ -379,7 +379,7 @@ function ModelUsersSection(props: { data: ModelUsagePoint[] }) {
     <section id="users" data-section="model-panel">
       <SectionTitle
         title="Unique Users"
-        description="Daily unique OpenCode Go users over the recent two-month window."
+        description="Daily unique BetterCode Go users over the recent two-month window."
       />
       <Show
         when={props.data.some((item) => item.users > 0)}
@@ -512,7 +512,7 @@ function modelUsageLabel(metric: "tokens" | "users") {
 function ModelEfficiencySection(props: { data: StatsModelData | null; catalog: ModelCatalogEntry | null }) {
   return (
     <section id="efficiency" data-section="model-panel">
-      <SectionTitle title="Efficiency" description="Cost, cache behavior, and average OpenCode Go session shape." />
+      <SectionTitle title="Efficiency" description="Cost, cache behavior, and average BetterCode Go session shape." />
       <Show
         when={props.data}
         fallback={
@@ -572,11 +572,11 @@ function ModelGeoBreakdownSection(props: { data: Record<UsageRange, CountryEntry
         setActiveCountry(undefined)
       }}
     >
-      <SectionTitle title="Geo Breakdown" description="OpenCode Go model tokens used by country." />
+      <SectionTitle title="Geo Breakdown" description="BetterCode Go model tokens used by country." />
       <Show
         when={data().length > 0}
         fallback={
-          <ModelEmptyState title="No geo data" description="No OpenCode Go geo_stat rows matched this model." />
+          <ModelEmptyState title="No geo data" description="No BetterCode Go geo_stat rows matched this model." />
         }
       >
         <div data-component="geo-breakdown">
@@ -737,7 +737,7 @@ function GeoCountryList(props: {
 function ModelPeersSection(props: { data: StatsModelData | null }) {
   return (
     <section id="peers" data-section="model-panel">
-      <SectionTitle title="Peers" description="Nearby models by recent OpenCode Go token volume." />
+      <SectionTitle title="Peers" description="Nearby models by recent BetterCode Go token volume." />
       <Show
         when={props.data?.peers.length}
         fallback={<ModelEmptyState title="No peers" description="Peer rankings appear after usage lands." />}

@@ -1,6 +1,6 @@
 export * as ConfigSkillPlugin from "./skill"
 
-import { define } from "@opencode-ai/plugin/v2/effect"
+import { define } from "@bettercode/plugin/v2/effect"
 import path from "path"
 import { Effect } from "effect"
 import { Config } from "../../config"

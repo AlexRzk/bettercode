@@ -1,10 +1,10 @@
-import { Database } from "@opencode-ai/core/database/database"
-import { LocationServiceMap } from "@opencode-ai/core/location-layer"
-import { Location } from "@opencode-ai/core/location"
-import { AbsolutePath } from "@opencode-ai/core/schema"
-import { SessionV2 } from "@opencode-ai/core/session"
-import { SessionTable } from "@opencode-ai/core/session/sql"
-import { WorkspaceV2 } from "@opencode-ai/core/workspace"
+import { Database } from "@bettercode/core/database/database"
+import { LocationServiceMap } from "@bettercode/core/location-layer"
+import { Location } from "@bettercode/core/location"
+import { AbsolutePath } from "@bettercode/core/schema"
+import { SessionV2 } from "@bettercode/core/session"
+import { SessionTable } from "@bettercode/core/session/sql"
+import { WorkspaceV2 } from "@bettercode/core/workspace"
 import { eq } from "drizzle-orm"
 import { Effect, Layer, Schema } from "effect"
 import { HttpRouter } from "effect/unstable/http"
@@ -17,7 +17,7 @@ export class SessionLocationMiddleware extends HttpApiMiddleware.Service<
   {
     provides: LocationServices
   }
->()("@opencode/HttpApiSessionLocation", {
+>()("@bettercode/HttpApiSessionLocation", {
   error: [InvalidRequestError, SessionNotFoundError],
 }) {}
 

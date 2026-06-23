@@ -1,6 +1,6 @@
-import { Location } from "@opencode-ai/core/location"
-import { Project } from "@opencode-ai/core/project"
-import { AbsolutePath } from "@opencode-ai/core/schema"
+import { Location } from "@bettercode/core/location"
+import { Project } from "@bettercode/core/project"
+import { AbsolutePath } from "@bettercode/core/schema"
 import { Effect, Layer } from "effect"
 import { tmpdir } from "./tmpdir"
 

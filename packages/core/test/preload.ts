@@ -1,1 +1,1 @@
-process.env.OPENCODE_DB = ":memory:"
+process.env.BETTERCODE_DB = ":memory:"

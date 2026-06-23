@@ -1,4 +1,4 @@
-import { define } from "@opencode-ai/plugin/v2/effect"
+import { define } from "@bettercode/plugin/v2/effect"
 import { Effect, Stream } from "effect"
 import { ModelV2 } from "../model"
 import { ModelRequest } from "../model-request"

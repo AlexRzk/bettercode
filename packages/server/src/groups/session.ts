@@ -1,10 +1,10 @@
-import { SessionMessage } from "@opencode-ai/core/session/message"
-import { SessionInput } from "@opencode-ai/core/session/input"
-import { Prompt } from "@opencode-ai/core/session/prompt"
-import { SessionV2 } from "@opencode-ai/core/session"
-import { ProjectV2 } from "@opencode-ai/core/project"
-import { AbsolutePath, PositiveInt, RelativePath, withStatics } from "@opencode-ai/core/schema"
-import { WorkspaceV2 } from "@opencode-ai/core/workspace"
+import { SessionMessage } from "@bettercode/core/session/message"
+import { SessionInput } from "@bettercode/core/session/input"
+import { Prompt } from "@bettercode/core/session/prompt"
+import { SessionV2 } from "@bettercode/core/session"
+import { ProjectV2 } from "@bettercode/core/project"
+import { AbsolutePath, PositiveInt, RelativePath, withStatics } from "@bettercode/core/schema"
+import { WorkspaceV2 } from "@bettercode/core/workspace"
 import { Schema, Struct } from "effect"
 import { HttpApiEndpoint, HttpApiGroup, HttpApiSchema, OpenApi } from "effect/unstable/httpapi"
 import {
@@ -16,9 +16,9 @@ import {
   UnknownError,
 } from "../errors"
 import { SessionLocationMiddleware } from "../middleware/session-location"
-import { AgentV2 } from "@opencode-ai/core/agent"
-import { ModelV2 } from "@opencode-ai/core/model"
-import { Location } from "@opencode-ai/core/location"
+import { AgentV2 } from "@bettercode/core/agent"
+import { ModelV2 } from "@bettercode/core/model"
+import { Location } from "@bettercode/core/location"
 
 const SessionsQueryFields = {
   workspace: WorkspaceV2.ID.pipe(Schema.optional),

@@ -20,13 +20,13 @@
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
-    "@opencode-ai/core": "workspace:*",
+    "@bettercode/core": "workspace:*",
     "@bettercode/quality-gate": "workspace:*",
     "@bettercode/project-brain": "workspace:*",
     "@bettercode/diff-risk": "workspace:*",
-    "@opencode-ai/sdk": "workspace:*",
-    "@opencode-ai/server": "workspace:*",
-    "@opencode-ai/tui": "workspace:*",
+    "@bettercode/sdk": "workspace:*",
+    "@bettercode/server": "workspace:*",
+    "@bettercode/tui": "workspace:*",
     "@opentui/core": "catalog:",
     "@opentui/solid": "catalog:",
     "@parcel/watcher": "2.5.1",
@@ -34,7 +34,7 @@
     "solid-js": "catalog:"
   },
   "devDependencies": {
-    "@opencode-ai/script": "workspace:*",
+    "@bettercode/script": "workspace:*",
     "@tsconfig/bun": "catalog:",
     "@types/bun": "catalog:",
     "@typescript/native-preview": "catalog:"

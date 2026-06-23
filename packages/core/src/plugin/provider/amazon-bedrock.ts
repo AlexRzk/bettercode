@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import type { LanguageModelV3 } from "@ai-sdk/provider"
-import { define } from "@opencode-ai/plugin/v2/effect"
+import { define } from "@bettercode/plugin/v2/effect"
 import { ProviderV2 } from "../../provider"
 
 type MantleSDK = {

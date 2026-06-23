@@ -1,5 +1,5 @@
 {
-  "name": "@opencode-ai/app",
+  "name": "@bettercode/app",
   "version": "1.17.9",
   "description": "",
   "type": "module",
@@ -45,9 +45,9 @@
   },
   "dependencies": {
     "@kobalte/core": "catalog:",
-    "@opencode-ai/core": "workspace:*",
-    "@opencode-ai/sdk": "workspace:*",
-    "@opencode-ai/ui": "workspace:*",
+    "@bettercode/core": "workspace:*",
+    "@bettercode/sdk": "workspace:*",
+    "@bettercode/ui": "workspace:*",
     "@pierre/trees": "1.0.0-beta.4",
     "@sentry/solid": "catalog:",
     "@shikijs/transformers": "3.9.2",

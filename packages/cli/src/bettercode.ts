@@ -19,7 +19,6 @@ const defaultQualityGate = {
 
 const flags = parseFlags(process.argv.slice(2))
 const root = flags.root ? resolveRoot(flags.root) : await findRepoRoot(process.cwd())
-migrateLegacyConfig(root)
 
 const command = flags.positional
 
@@ -253,44 +252,6 @@ async function generateReport(repoRoot: string): Promise<Report> {
   }
 
   return { gate, brain: { hasProfile, historyEntries } }
-}
-
-function migrateLegacyConfig(repoRoot: string) {
-  const legacyDir = join(repoRoot, ".better-code")
-  const newDir = join(repoRoot, configDir)
-
-  const legacyStat = statSafe(legacyDir)
-  if (!legacyStat?.isDirectory()) return
-
-  try {
-    const { readdirSync, copyFileSync, mkdirSync } = require("node:fs")
-    mkdirSync(newDir, { recursive: true })
-    mkdirSync(join(newDir, "brain"), { recursive: true })
-
-    for (const entry of readdirSync(legacyDir)) {
-      const src = join(legacyDir, entry)
-      const dest = join(newDir, entry)
-      const srcStat = statSafe(src)
-      if (srcStat?.isFile() && !existsSync(dest)) copyFileSync(src, dest)
-    }
-
-    const brainSrc = join(legacyDir, "brain")
-    const brainStat = statSafe(brainSrc)
-    if (brainStat?.isDirectory()) {
-      for (const entry of readdirSync(brainSrc)) {
-        const src = join(brainSrc, entry)
-        const dest = join(newDir, "brain", entry)
-        const srcStat = statSafe(src)
-        if (srcStat?.isFile() && !existsSync(dest)) copyFileSync(src, dest)
-      }
-    }
-  } catch {
-    // ignore
-  }
-}
-
-function statSafe(p: string) {
-  try { return require("node:fs").statSync(p) } catch { return null }
 }
 
 async function findRepoRoot(start: string) {

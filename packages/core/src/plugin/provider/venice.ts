@@ -1,5 +1,5 @@
 import { Effect } from "effect"
-import { define } from "@opencode-ai/plugin/v2/effect"
+import { define } from "@bettercode/plugin/v2/effect"
 
 export const VenicePlugin = define({
   id: "venice",

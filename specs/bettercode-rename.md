@@ -1,51 +1,51 @@
-# BetterCode Rename — Remaining OpenCode References
+# BetterCode Rename — Remaining BetterCode References
 
-This file tracks OpenCode references that were intentionally NOT renamed in the
+This file tracks BetterCode references that were intentionally NOT renamed in the
 `bettercode-rename` step. These will be addressed in a future full rebrand.
 
 ## Renamed in this step
 
-- `@better-code/*` → `@bettercode/*` (all BetterCode packages)
-- `@opencode-ai/cli` → `@bettercode/cli`
-- CLI command `better-code` → `bettercode`
-- Config directory `.better-code/` → `.bettercode/`
-- Root package name `opencode` remains unchanged (see below)
+- `@bettercode/*` → `@bettercode/*` (all BetterCode packages)
+- `@bettercode/cli` → `@bettercode/cli`
+- CLI command `bettercode` → `bettercode`
+- Config directory `.bettercode/` → `.bettercode/`
+- Root package name `bettercode` remains unchanged (see below)
 
 ## NOT renamed (intentional)
 
 ### Root-level
 
-- `root package.json` name: `opencode` — changing this would break the entire workspace
-- `root package.json` repository URLs pointing to `anomalyco/opencode`
+- `root package.json` name: `bettercode` — changing this would break the entire workspace
+- `root package.json` repository URLs pointing to `anomalyco/bettercode`
 
-### Legacy OpenCode packages (not part of BetterCode runtime)
+### Legacy BetterCode packages (not part of BetterCode runtime)
 
-- `packages/core` — `@opencode-ai/core`
-- `packages/app` — `@opencode-ai/app`
-- `packages/sdk` — `@opencode-ai/sdk`
-- `packages/web` — `@opencode-ai/web`
-- `packages/desktop` — `@opencode-ai/desktop`
-- `packages/server` — `@opencode-ai/server`
-- `packages/tui` — `@opencode-ai/tui`
-- `packages/console` — `@opencode-ai/console`
-- `packages/script` — `@opencode-ai/script`
+- `packages/core` — `@bettercode/core`
+- `packages/app` — `@bettercode/app`
+- `packages/sdk` — `@bettercode/sdk`
+- `packages/web` — `@bettercode/web`
+- `packages/desktop` — `@bettercode/desktop`
+- `packages/server` — `@bettercode/server`
+- `packages/tui` — `@bettercode/tui`
+- `packages/console` — `@bettercode/console`
+- `packages/script` — `@bettercode/script`
 - `packages/docs` — documentation
 - `packages/storybook` — UI stories
 - `packages/http-recorder` — dev tool
 - `packages/function` — utility
-- `packages/identity` — auth (OpenCode)
-- `packages/llm` — LLM integration (OpenCode)
-- `packages/plugin` — plugin system (OpenCode)
-- `packages/stats` — analytics (OpenCode)
+- `packages/identity` — auth (BetterCode)
+- `packages/llm` — LLM integration (BetterCode)
+- `packages/plugin` — plugin system (BetterCode)
+- `packages/stats` — analytics (BetterCode)
 - `packages/enterprise` — enterprise features
 
 ### CLI dependencies kept as-is
 
-- `@opencode-ai/core` in `packages/cli/package.json`
-- `@opencode-ai/sdk` in `packages/cli/package.json`
-- `@opencode-ai/server` in `packages/cli/package.json`
-- `@opencode-ai/tui` in `packages/cli/package.json`
-- `@opencode-ai/script` in `packages/cli/package.json`
+- `@bettercode/core` in `packages/cli/package.json`
+- `@bettercode/sdk` in `packages/cli/package.json`
+- `@bettercode/server` in `packages/cli/package.json`
+- `@bettercode/tui` in `packages/cli/package.json`
+- `@bettercode/script` in `packages/cli/package.json`
 - `@opentui/core`, `@opentui/solid` — external UI libs
 
 ### Other

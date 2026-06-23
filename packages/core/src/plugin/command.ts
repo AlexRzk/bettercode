@@ -1,6 +1,6 @@
 export * as CommandPlugin from "./command"
 
-import { define } from "@opencode-ai/plugin/v2/effect"
+import { define } from "@bettercode/plugin/v2/effect"
 import { Effect } from "effect"
 import PROMPT_INITIALIZE from "./command/initialize.txt"
 import PROMPT_REVIEW from "./command/review.txt"

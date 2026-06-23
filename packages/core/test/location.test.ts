@@ -1,9 +1,9 @@
 import { describe, expect } from "bun:test"
 import { Effect, Layer } from "effect"
-import { Location } from "@opencode-ai/core/location"
-import { Project } from "@opencode-ai/core/project"
-import { AbsolutePath } from "@opencode-ai/core/schema"
-import { WorkspaceV2 } from "@opencode-ai/core/workspace"
+import { Location } from "@bettercode/core/location"
+import { Project } from "@bettercode/core/project"
+import { AbsolutePath } from "@bettercode/core/schema"
+import { WorkspaceV2 } from "@bettercode/core/workspace"
 import { testEffect } from "./lib/effect"
 
 const workspaceID = WorkspaceV2.ID.make("wrk_test")

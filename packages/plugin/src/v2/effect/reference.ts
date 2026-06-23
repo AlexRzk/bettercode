@@ -1,4 +1,4 @@
-import type { ReferenceGitSource, ReferenceInfo, ReferenceLocalSource } from "@opencode-ai/sdk/v2/types"
+import type { ReferenceGitSource, ReferenceInfo, ReferenceLocalSource } from "@bettercode/sdk/v2/types"
 import type { Effect } from "effect"
 import type { Transformable } from "./registration.js"
 

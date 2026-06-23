@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { ModelV2 } from "../../model"
-import { define } from "@opencode-ai/plugin/v2/effect"
+import { define } from "@bettercode/plugin/v2/effect"
 import { ProviderV2 } from "../../provider"
 import { Integration } from "../../integration"
 import { browser, headless } from "./openai-auth"

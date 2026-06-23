@@ -1,8 +1,8 @@
 export * as PluginHost from "./host"
 
 import type { LanguageModelV3 } from "@ai-sdk/provider"
-import type { PluginHost as Interface } from "@opencode-ai/plugin/v2/effect"
-import type { Event as SDKEvent, ModelV2Info } from "@opencode-ai/sdk/v2/types"
+import type { PluginHost as Interface } from "@bettercode/plugin/v2/effect"
+import type { Event as SDKEvent, ModelV2Info } from "@bettercode/sdk/v2/types"
 import { Effect, Schema, Stream } from "effect"
 import { AgentV2 } from "../agent"
 import { Catalog } from "../catalog"

@@ -1,7 +1,7 @@
 import os from "os"
 import { InstallationVersion } from "../../installation/version"
 import { Effect } from "effect"
-import { define } from "@opencode-ai/plugin/v2/effect"
+import { define } from "@bettercode/plugin/v2/effect"
 import { ProviderV2 } from "../../provider"
 
 const providerID = ProviderV2.ID.make("cloudflare-workers-ai")
@@ -66,7 +66,7 @@ function sdkOptions(options: Record<string, any>) {
     baseURL: expandAccountId(options.baseURL),
     apiKey: process.env.CLOUDFLARE_API_KEY ?? options.apiKey,
     headers: {
-      "User-Agent": `opencode/${InstallationVersion} cloudflare-workers-ai (${os.platform()} ${os.release()}; ${os.arch()})`,
+      "User-Agent": `bettercode/${InstallationVersion} cloudflare-workers-ai (${os.platform()} ${os.release()}; ${os.arch()})`,
       ...options.headers,
     },
     name: providerID,

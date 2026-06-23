@@ -1,13 +1,13 @@
-# OpenCode V2 Plugin API
+# BetterCode V2 Plugin API
 
 > Design proposal. The API shown here is the intended V2 model and is not fully implemented yet.
 
-This document explains how OpenCode V2 plugins contribute agents, commands, skills, integrations, providers, and models without importing `@opencode-ai/core`.
+This document explains how BetterCode V2 plugins contribute agents, commands, skills, integrations, providers, and models without importing `@bettercode/core`.
 
 The design has four goals:
 
 - Internal and external plugins use the same API.
-- Plugin values use generated `@opencode-ai/sdk` types.
+- Plugin values use generated `@bettercode/sdk` types.
 - Core may keep richer internal representations such as branded IDs and decoded Effect schemas.
 - Plugins can react to changing data without reloading an entire Location.
 
@@ -34,7 +34,7 @@ export default defineEffectPlugin({
 
 A transform is not a one-time mutation. It is a replayable declaration.
 
-OpenCode may run it when:
+BetterCode may run it when:
 
 - The plugin is added.
 - The plugin is removed or replaced.
@@ -70,7 +70,7 @@ models.dev catalog transform
 This plugin adds a reviewer agent.
 
 ```ts
-import { defineEffectPlugin } from "@opencode-ai/plugin/v2/effect"
+import { defineEffectPlugin } from "@bettercode/plugin/v2/effect"
 import { Effect } from "effect"
 
 export default defineEffectPlugin({
@@ -91,7 +91,7 @@ export default defineEffectPlugin({
 
 The editor supplies a complete default agent when `reviewer` does not exist. The callback modifies that value using the generated SDK agent shape.
 
-When the plugin unloads, OpenCode rebuilds the agent registry without this transform. The reviewer disappears automatically.
+When the plugin unloads, BetterCode rebuilds the agent registry without this transform. The reviewer disappears automatically.
 
 ## Transform Editors
 
@@ -116,7 +116,7 @@ Later plugins see mutations made by earlier plugins in the same rebuild.
 This plugin contributes one provider and one model.
 
 ```ts
-import { defineEffectPlugin } from "@opencode-ai/plugin/v2/effect"
+import { defineEffectPlugin } from "@bettercode/plugin/v2/effect"
 import { Effect } from "effect"
 
 export default defineEffectPlugin({
@@ -207,7 +207,7 @@ Repeated invalidations are serialized and may be coalesced.
 Models.dev is the main example of a dynamic plugin. It projects one changing source into the integration and catalog domains.
 
 ```ts
-import { defineEffectPlugin } from "@opencode-ai/plugin/v2/effect"
+import { defineEffectPlugin } from "@bettercode/plugin/v2/effect"
 import { Effect, Stream } from "effect"
 
 export default defineEffectPlugin({
@@ -350,11 +350,11 @@ return {
   },
 
   "aisdk.sdk": Effect.fn(function* (event) {
-    // Runs when OpenCode needs an AI SDK provider.
+    // Runs when BetterCode needs an AI SDK provider.
   }),
 
   "aisdk.language": Effect.fn(function* (event) {
-    // Runs when OpenCode selects a language model implementation.
+    // Runs when BetterCode selects a language model implementation.
   }),
 }
 ```
@@ -426,7 +426,7 @@ This keeps transform callbacks synchronous and avoids hidden dependency tracking
 
 ## Plugin Order
 
-OpenCode's default distribution uses an opinionated order.
+BetterCode's default distribution uses an opinionated order.
 
 ```text
 1. Built-in agents, commands, and skills
@@ -471,11 +471,11 @@ Core finalizers always run after plugin transforms for that domain.
 
 ## Add, Remove, And Replace
 
-When a plugin is added, OpenCode invalidates every domain for which it returned a transform.
+When a plugin is added, BetterCode invalidates every domain for which it returned a transform.
 
-When a plugin is removed, OpenCode removes its hooks and invalidates those domains. Rebuilding from base state automatically removes the plugin's prior mutations.
+When a plugin is removed, BetterCode removes its hooks and invalidates those domains. Rebuilding from base state automatically removes the plugin's prior mutations.
 
-When a plugin is replaced, OpenCode swaps its hooks, preserves the intended plugin order, and invalidates the affected domains.
+When a plugin is replaced, BetterCode swaps its hooks, preserves the intended plugin order, and invalidates the affected domains.
 
 No plugin-specific undo callback is required.
 

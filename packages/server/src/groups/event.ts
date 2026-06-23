@@ -1,5 +1,5 @@
-import { EventV2 } from "@opencode-ai/core/event"
-import { Location } from "@opencode-ai/core/location"
+import { EventV2 } from "@bettercode/core/event"
+import { Location } from "@bettercode/core/location"
 import { Schema } from "effect"
 import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "effect/unstable/httpapi"
 

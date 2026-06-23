@@ -1,5 +1,5 @@
 import { Effect } from "effect"
-import { define } from "@opencode-ai/plugin/v2/effect"
+import { define } from "@bettercode/plugin/v2/effect"
 
 export const ZenmuxPlugin = define({
   id: "zenmux",
@@ -11,8 +11,8 @@ export const ZenmuxPlugin = define({
           if (item.provider.api.package !== "@ai-sdk/openai-compatible") continue
           if (item.provider.api.url !== "https://zenmux.ai/api/v1") continue
           evt.provider.update(item.provider.id, (provider) => {
-            provider.request.headers["HTTP-Referer"] ??= "https://opencode.ai/"
-            provider.request.headers["X-Title"] ??= "opencode"
+            provider.request.headers["HTTP-Referer"] ??= "https://bettercode.ai/"
+            provider.request.headers["X-Title"] ??= "bettercode"
           })
         }
       }),

@@ -26,7 +26,7 @@ export interface Transformable<DraftApi> {
   readonly rebuild: Rebuild
 }
 
-const CurrentBatch = Context.Reference<Set<Rebuild> | undefined>("@opencode/State/CurrentBatch", {
+const CurrentBatch = Context.Reference<Set<Rebuild> | undefined>("@bettercode/State/CurrentBatch", {
   defaultValue: () => undefined,
 })
 

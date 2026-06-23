@@ -1,10 +1,10 @@
 import { Argument, Flag } from "effect/unstable/cli"
 import { Spec } from "../framework/spec"
 
-declare const OPENCODE_CLI_NAME: string | undefined
+declare const BETTERCODE_CLI_NAME: string | undefined
 
-export const Commands = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME : "opencode", {
-  description: "OpenCode 2.0 preview command line interface",
+export const Commands = Spec.make(typeof BETTERCODE_CLI_NAME === "string" ? BETTERCODE_CLI_NAME : "bettercode", {
+  description: "BetterCode 2.0 preview command line interface",
   commands: [
     Spec.make("debug", {
       description: "Debugging and troubleshooting tools",

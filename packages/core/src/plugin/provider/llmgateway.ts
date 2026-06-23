@@ -1,5 +1,5 @@
 import { Effect } from "effect"
-import { define } from "@opencode-ai/plugin/v2/effect"
+import { define } from "@bettercode/plugin/v2/effect"
 
 export const LLMGatewayPlugin = define({
   id: "llmgateway",
@@ -13,9 +13,9 @@ export const LLMGatewayPlugin = define({
           if (item.provider.api.url !== "https://api.llmgateway.io/v1") continue
           if (!(yield* ctx.integration.get(item.provider.id))) continue
           evt.provider.update(item.provider.id, (provider) => {
-            provider.request.headers["HTTP-Referer"] = "https://opencode.ai/"
-            provider.request.headers["X-Title"] = "opencode"
-            provider.request.headers["X-Source"] = "opencode"
+            provider.request.headers["HTTP-Referer"] = "https://bettercode.ai/"
+            provider.request.headers["X-Title"] = "bettercode"
+            provider.request.headers["X-Source"] = "bettercode"
           })
         }
       }),

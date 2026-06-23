@@ -1,13 +1,13 @@
 import "@/index.css"
 import * as Sentry from "@sentry/solid"
-import { I18nProvider } from "@opencode-ai/ui/context"
-import { DialogProvider } from "@opencode-ai/ui/context/dialog"
-import { FileComponentProvider } from "@opencode-ai/ui/context/file"
-import { MarkedProvider } from "@opencode-ai/ui/context/marked"
-import { File } from "@opencode-ai/ui/file"
-import { Font } from "@opencode-ai/ui/font"
-import { Splash } from "@opencode-ai/ui/logo"
-import { ThemeProvider } from "@opencode-ai/ui/theme/context"
+import { I18nProvider } from "@bettercode/ui/context"
+import { DialogProvider } from "@bettercode/ui/context/dialog"
+import { FileComponentProvider } from "@bettercode/ui/context/file"
+import { MarkedProvider } from "@bettercode/ui/context/marked"
+import { File } from "@bettercode/ui/file"
+import { Font } from "@bettercode/ui/font"
+import { Splash } from "@bettercode/ui/logo"
+import { ThemeProvider } from "@bettercode/ui/theme/context"
 import { MetaProvider } from "@solidjs/meta"
 import { type BaseRouterProps, Navigate, Route, Router, useParams, useSearchParams } from "@solidjs/router"
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query"
@@ -167,7 +167,7 @@ function UiI18nBridge(props: ParentProps) {
 
 declare global {
   interface Window {
-    __OPENCODE__?: {
+    __BETTERCODE__?: {
       deepLinks?: string[]
     }
     api?: {

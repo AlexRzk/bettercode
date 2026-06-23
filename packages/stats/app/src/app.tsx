@@ -7,10 +7,10 @@ import "./app.css"
 function AppMeta() {
   return (
     <>
-      <Title>AI Model Usage Rankings | OpenCode Data</Title>
+      <Title>AI Model Usage Rankings | BetterCode Data</Title>
       <Meta
         name="description"
-        content="Explore OpenCode Go usage across AI models, including token volume, rankings, market share, token pricing, session cost, cache ratio, and geo breakdowns."
+        content="Explore BetterCode Go usage across AI models, including token volume, rankings, market share, token pricing, session cost, cache ratio, and geo breakdowns."
       />
     </>
   )

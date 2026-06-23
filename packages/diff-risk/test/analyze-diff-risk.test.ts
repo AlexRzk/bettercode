@@ -142,7 +142,7 @@ describe("analyzeDiffRisk", () => {
   })
 
   test("returns HIGH for nested package.json in monorepo", () => {
-    const result = analyzeDiffRisk(["packages/opencode/package.json"])
+    const result = analyzeDiffRisk(["packages/bettercode/package.json"])
     expect(result.risk).toBe("high")
     expect(result.reasons).toEqual(["Package manifest modified"])
     expect(result.reviewRequired).toBe(true)

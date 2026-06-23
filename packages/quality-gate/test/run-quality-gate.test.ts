@@ -1,18 +1,28 @@
-import { afterEach, describe, expect, test } from "bun:test"
-import { mkdir, rm, writeFile } from "node:fs/promises"
+import { afterEach, beforeEach, describe, expect, test } from "bun:test"
+import { cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { runQualityGate } from "../src"
 
 const fixtures = join(import.meta.dir, "fixtures", "gate")
-const diffFixture = join(fixtures, "diff")
+const commandFixtureNames = ["pass", "fail", "missing", "long-stderr"]
+let fixtureRoot = ""
+
+beforeEach(async () => {
+  fixtureRoot = await mkdtemp(join(tmpdir(), "bettercode-quality-gate-"))
+  for (const name of commandFixtureNames) {
+    await cp(join(fixtures, name), commandFixture(name), { recursive: true })
+    await initRepo(commandFixture(name))
+  }
+})
 
 afterEach(async () => {
-  await rm(diffFixture, { recursive: true, force: true })
+  await rm(fixtureRoot, { recursive: true, force: true })
 })
 
 describe("runQualityGate", () => {
   test("marks successful commands as PASS", async () => {
-    const result = await runQualityGate(join(fixtures, "pass"))
+    const result = await runQualityGate(commandFixture("pass"))
 
     expect(result.status).toBe("PASS")
     expect(result.score).toBe(100)
@@ -20,7 +30,7 @@ describe("runQualityGate", () => {
   })
 
   test("marks failing commands as FAIL", async () => {
-    const result = await runQualityGate(join(fixtures, "fail"))
+    const result = await runQualityGate(commandFixture("fail"))
 
     expect(result.status).toBe("FAIL")
     expect(result.score).toBe(70)
@@ -30,7 +40,7 @@ describe("runQualityGate", () => {
   })
 
   test("marks absent scripts as SKIPPED without inventing commands", async () => {
-    const result = await runQualityGate(join(fixtures, "missing"))
+    const result = await runQualityGate(commandFixture("missing"))
 
     expect(result.status).toBe("WARN")
     expect(result.score).toBe(95)
@@ -43,7 +53,7 @@ describe("runQualityGate", () => {
   })
 
   test("truncates long stderr output without crashing", async () => {
-    const result = await runQualityGate(join(fixtures, "long-stderr"))
+    const result = await runQualityGate(commandFixture("long-stderr"))
 
     expect(result.status).toBe("PASS")
     expect(result.checks[0]?.status).toBe("PASS")
@@ -52,7 +62,7 @@ describe("runQualityGate", () => {
   })
 
   test("includes git diff summary", async () => {
-    const root = diffFixture
+    const root = join(fixtureRoot, "diff")
     await rm(root, { recursive: true, force: true })
     await mkdir(root, { recursive: true })
     await run(root, ["init"])
@@ -79,4 +89,17 @@ async function run(cwd: string, args: string[]) {
   })
   const exitCode = await child.exited
   if (exitCode !== 0) throw new Error(await new Response(child.stderr).text())
+}
+
+function commandFixture(name: string) {
+  return join(fixtureRoot, name)
+}
+
+async function initRepo(root: string) {
+  await rm(join(root, ".git"), { recursive: true, force: true })
+  await run(root, ["init"])
+  await run(root, ["config", "user.email", "test@example.com"])
+  await run(root, ["config", "user.name", "Test User"])
+  await run(root, ["add", "."])
+  await run(root, ["commit", "-m", "initial"])
 }

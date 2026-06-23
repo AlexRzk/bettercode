@@ -2,19 +2,19 @@ import fs from "fs/promises"
 import path from "path"
 import { describe, expect } from "bun:test"
 import { DateTime, Deferred, Effect, Equal, Hash, Layer, Schema, Stream } from "effect"
-import { Tool } from "@opencode-ai/core/public"
-import { define } from "@opencode-ai/plugin/v2/effect"
-import { AgentV2 } from "@opencode-ai/core/agent"
-import { Catalog } from "@opencode-ai/core/catalog"
-import { LocationServiceMap } from "@opencode-ai/core/location-layer"
-import { Location } from "@opencode-ai/core/location"
-import { ModelV2 } from "@opencode-ai/core/model"
-import { PluginBoot } from "@opencode-ai/core/plugin/boot"
-import { ProjectV2 } from "@opencode-ai/core/project"
-import { ProviderV2 } from "@opencode-ai/core/provider"
-import { AbsolutePath } from "@opencode-ai/core/schema"
-import { SessionV2 } from "@opencode-ai/core/session"
-import { SessionRunnerModel } from "@opencode-ai/core/session/runner/model"
+import { Tool } from "@bettercode/core/public"
+import { define } from "@bettercode/plugin/v2/effect"
+import { AgentV2 } from "@bettercode/core/agent"
+import { Catalog } from "@bettercode/core/catalog"
+import { LocationServiceMap } from "@bettercode/core/location-layer"
+import { Location } from "@bettercode/core/location"
+import { ModelV2 } from "@bettercode/core/model"
+import { PluginBoot } from "@bettercode/core/plugin/boot"
+import { ProjectV2 } from "@bettercode/core/project"
+import { ProviderV2 } from "@bettercode/core/provider"
+import { AbsolutePath } from "@bettercode/core/schema"
+import { SessionV2 } from "@bettercode/core/session"
+import { SessionRunnerModel } from "@bettercode/core/session/runner/model"
 import { tmpdir } from "./fixture/tmpdir"
 import { testEffect } from "./lib/effect"
 import { toolDefinitions } from "./lib/tool"
@@ -79,7 +79,7 @@ describe("LocationServiceMap", () => {
           })
           yield* Effect.promise(() =>
             fs.writeFile(
-              path.join(blocked.path, "opencode.json"),
+              path.join(blocked.path, "bettercode.json"),
               JSON.stringify({
                 experimental: { policies: [{ effect: "deny", action: "provider.use", resource: "test" }] },
               }),
@@ -150,7 +150,7 @@ describe("LocationServiceMap", () => {
           const location = Location.Ref.make({ directory: AbsolutePath.make(dir.path) })
           yield* Effect.promise(() =>
             fs.writeFile(
-              path.join(dir.path, "opencode.json"),
+              path.join(dir.path, "bettercode.json"),
               JSON.stringify({
                 providers: {
                   unavailable: {

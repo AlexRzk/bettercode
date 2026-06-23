@@ -1,6 +1,6 @@
 export * as PluginBoot from "./boot"
 
-import type { Plugin as PublicPlugin } from "@opencode-ai/plugin/v2/effect"
+import type { Plugin as PublicPlugin } from "@bettercode/plugin/v2/effect"
 import { Context, Deferred, Effect, Layer } from "effect"
 import { Integration } from "../integration"
 import { AgentV2 } from "../agent"
@@ -37,7 +37,7 @@ export interface Interface {
   readonly wait: () => Effect.Effect<void>
 }
 
-export class Service extends Context.Service<Service, Interface>()("@opencode/v2/PluginBoot") {}
+export class Service extends Context.Service<Service, Interface>()("@bettercode/v2/PluginBoot") {}
 
 export const layer = Layer.effect(
   Service,

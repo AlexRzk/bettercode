@@ -3,7 +3,7 @@ import type {
   IntegrationInfo,
   IntegrationKeyMethod,
   IntegrationOAuthMethod,
-} from "@opencode-ai/sdk/v2/types"
+} from "@bettercode/sdk/v2/types"
 import type { Effect } from "effect"
 import type { Transformable } from "./registration.js"
 

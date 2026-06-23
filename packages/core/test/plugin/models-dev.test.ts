@@ -1,18 +1,18 @@
 import path from "path"
 import { describe, expect } from "bun:test"
 import { Effect, Layer, Stream } from "effect"
-import { Catalog } from "@opencode-ai/core/catalog"
-import { Integration } from "@opencode-ai/core/integration"
-import { Credential } from "@opencode-ai/core/credential"
-import { Database } from "@opencode-ai/core/database/database"
-import { EventV2 } from "@opencode-ai/core/event"
-import { Flag } from "@opencode-ai/core/flag/flag"
-import { Location } from "@opencode-ai/core/location"
-import { ModelsDev } from "@opencode-ai/core/models-dev"
-import { PluginV2 } from "@opencode-ai/core/plugin"
-import { ModelsDevPlugin } from "@opencode-ai/core/plugin/models-dev"
-import { Policy } from "@opencode-ai/core/policy"
-import { AbsolutePath } from "@opencode-ai/core/schema"
+import { Catalog } from "@bettercode/core/catalog"
+import { Integration } from "@bettercode/core/integration"
+import { Credential } from "@bettercode/core/credential"
+import { Database } from "@bettercode/core/database/database"
+import { EventV2 } from "@bettercode/core/event"
+import { Flag } from "@bettercode/core/flag/flag"
+import { Location } from "@bettercode/core/location"
+import { ModelsDev } from "@bettercode/core/models-dev"
+import { PluginV2 } from "@bettercode/core/plugin"
+import { ModelsDevPlugin } from "@bettercode/core/plugin/models-dev"
+import { Policy } from "@bettercode/core/policy"
+import { AbsolutePath } from "@bettercode/core/schema"
 import { location } from "../fixture/location"
 import { testEffect } from "../lib/effect"
 import { catalogHost, host, integrationHost } from "./host"
@@ -44,11 +44,11 @@ describe("ModelsDevPlugin", () => {
     Effect.acquireUseRelease(
       Effect.sync(() => {
         const previous = {
-          path: Flag.OPENCODE_MODELS_PATH,
-          disabled: Flag.OPENCODE_DISABLE_MODELS_FETCH,
+          path: Flag.BETTERCODE_MODELS_PATH,
+          disabled: Flag.BETTERCODE_DISABLE_MODELS_FETCH,
         }
-        Flag.OPENCODE_MODELS_PATH = path.join(import.meta.dir, "fixtures", "models-dev.json")
-        Flag.OPENCODE_DISABLE_MODELS_FETCH = true
+        Flag.BETTERCODE_MODELS_PATH = path.join(import.meta.dir, "fixtures", "models-dev.json")
+        Flag.BETTERCODE_DISABLE_MODELS_FETCH = true
         return previous
       }),
       () =>
@@ -79,8 +79,8 @@ describe("ModelsDevPlugin", () => {
         }).pipe(Effect.provide(ModelsDev.defaultLayer)),
       (previous) =>
         Effect.sync(() => {
-          Flag.OPENCODE_MODELS_PATH = previous.path
-          Flag.OPENCODE_DISABLE_MODELS_FETCH = previous.disabled
+          Flag.BETTERCODE_MODELS_PATH = previous.path
+          Flag.BETTERCODE_DISABLE_MODELS_FETCH = previous.disabled
         }),
     ),
   )

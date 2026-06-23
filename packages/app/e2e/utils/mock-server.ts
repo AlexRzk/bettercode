@@ -24,7 +24,7 @@ export interface MockServerConfig {
   eventRetry?: number
 }
 
-export async function mockOpenCodeServer(page: Page, config: MockServerConfig) {
+export async function mockBetterCodeServer(page: Page, config: MockServerConfig) {
   const staticRoutes: Record<string, unknown> = {
     "/provider": config.provider,
     "/path": {
@@ -32,7 +32,7 @@ export async function mockOpenCodeServer(page: Page, config: MockServerConfig) {
       config: config.directory,
       worktree: config.directory,
       directory: config.directory,
-      home: "C:/OpenCode",
+      home: "C:/BetterCode",
     },
     "/project": [config.project],
     "/project/current": config.project,

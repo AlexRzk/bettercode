@@ -20,18 +20,18 @@ ts-dist
 /result
 refs
 Session.vim
-/opencode.json
+/bettercode.json
 a.out
 target
 .scripts
 .direnv/
 
 # Local dev files
-opencode-dev
+bettercode-dev
 UPCOMING_CHANGELOG.md
 logs/
 *.bun-build
 tsconfig.tsbuildinfo
 
-# Better Code local state
-.better-code/brain/task-history.jsonl
+# BetterCode local state
+.bettercode/brain/task-history.jsonl

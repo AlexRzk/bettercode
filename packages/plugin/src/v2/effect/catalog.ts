@@ -1,4 +1,4 @@
-import type { ModelV2Info, ProviderV2Info } from "@opencode-ai/sdk/v2/types"
+import type { ModelV2Info, ProviderV2Info } from "@bettercode/sdk/v2/types"
 import type { Effect } from "effect"
 import type { Transformable } from "./registration.js"
 

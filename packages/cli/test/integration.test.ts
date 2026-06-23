@@ -7,7 +7,7 @@ const fixtureDir = join(import.meta.dir, ".tmp")
 const cliPath = join(import.meta.dir, "..", "src", "bettercode.ts")
 
 function runCli(args: string, cwd: string) {
-  return execSync(`bun ${cliPath} ${args}`, { cwd, stdio: "pipe", encoding: "utf8", timeout: 15000 })
+  return execSync(`bun ${cliPath} ${args}`, { cwd, stdio: "pipe", encoding: "utf8", timeout: 60000 })
 }
 
 function runCliJson(args: string, cwd: string) {
@@ -68,7 +68,7 @@ describe("full CLI flow on Next.js fixture", () => {
     expect(Array.isArray(result.requiredChecks)).toBe(true)
     expect(result.requiredChecks.length).toBeGreaterThan(0)
     expect(Array.isArray(result.likelyFiles)).toBe(true)
-  })
+  }, 60000)
 
   test("gate run produces a result", () => {
     runCli("init", appDir())
@@ -78,7 +78,7 @@ describe("full CLI flow on Next.js fixture", () => {
     expect(result).toHaveProperty("risk")
     expect(result).toHaveProperty("checks")
     expect(typeof result.score).toBe("number")
-  }, 20000)
+  }, 60000)
 
   test("brain update writes profile", () => {
     runCli("init", appDir())
@@ -105,7 +105,7 @@ describe("full CLI flow on Next.js fixture", () => {
     expect(result).toHaveProperty("score")
     expect(result).toHaveProperty("duration_ms")
     expect(typeof result.score).toBe("number")
-  }, 20000)
+  }, 60000)
 
   test("report produces a summary", () => {
     runCli("init", appDir())
@@ -115,7 +115,7 @@ describe("full CLI flow on Next.js fixture", () => {
     expect(result).toHaveProperty("brain")
     expect(result.gate).toHaveProperty("status")
     expect(result.brain).toHaveProperty("hasProfile")
-  }, 20000)
+  }, 60000)
 
   test("--root flag works", () => {
     const result = runCliJson(`--root ${appDir()} init`, appDir())

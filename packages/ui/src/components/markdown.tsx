@@ -2,7 +2,7 @@ import { useMarked } from "../context/marked"
 import { useI18n } from "../context/i18n"
 import DOMPurify from "dompurify"
 import morphdom from "morphdom"
-import { checksum } from "@opencode-ai/core/util/encode"
+import { checksum } from "@bettercode/core/util/encode"
 import {
   ComponentProps,
   createEffect,
@@ -599,7 +599,7 @@ function updateCodeBlock(
   const wrapper = document.createElement("div")
   wrapper.setAttribute("data-component", "markdown-code")
   const pre = document.createElement("pre")
-  pre.className = "shiki OpenCode"
+  pre.className = "shiki BetterCode"
   const codeElement = document.createElement("code")
   codeElement.className = `language-${block.language}`
   ;[...block.stable, ...block.unstable].map(createTokenSpan).forEach((span) => codeElement.appendChild(span))

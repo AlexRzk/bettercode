@@ -140,4 +140,69 @@ describe("analyzeDiffRisk", () => {
     const result = analyzeDiffRisk(["src/app/api/a/route.ts", "src/app/api/b/route.ts"])
     expect(result.reasons).toEqual(["API route modified"])
   })
+
+  test("returns HIGH for nested package.json in monorepo", () => {
+    const result = analyzeDiffRisk(["packages/opencode/package.json"])
+    expect(result.risk).toBe("high")
+    expect(result.reasons).toEqual(["Package manifest modified"])
+    expect(result.reviewRequired).toBe(true)
+    expect(result.requiredChecks).toEqual(["typecheck", "test", "build"])
+  })
+
+  test("returns HIGH for nested package.json in apps folder", () => {
+    const result = analyzeDiffRisk(["apps/web/package.json"])
+    expect(result.risk).toBe("high")
+    expect(result.reasons).toEqual(["Package manifest modified"])
+    expect(result.reviewRequired).toBe(true)
+  })
+
+  test("returns HIGH for package-lock.json", () => {
+    const result = analyzeDiffRisk(["package-lock.json"])
+    expect(result.risk).toBe("high")
+    expect(result.reasons).toEqual(["Lockfile modified"])
+    expect(result.reviewRequired).toBe(true)
+    expect(result.requiredChecks).toEqual(["typecheck", "test", "build"])
+  })
+
+  test("returns HIGH for pnpm-lock.yaml", () => {
+    const result = analyzeDiffRisk(["pnpm-lock.yaml"])
+    expect(result.risk).toBe("high")
+    expect(result.reasons).toEqual(["Lockfile modified"])
+    expect(result.reviewRequired).toBe(true)
+  })
+
+  test("returns HIGH for yarn.lock", () => {
+    const result = analyzeDiffRisk(["yarn.lock"])
+    expect(result.risk).toBe("high")
+    expect(result.reasons).toEqual(["Lockfile modified"])
+    expect(result.reviewRequired).toBe(true)
+  })
+
+  test("returns HIGH for bun.lock", () => {
+    const result = analyzeDiffRisk(["bun.lock"])
+    expect(result.risk).toBe("high")
+    expect(result.reasons).toEqual(["Lockfile modified"])
+    expect(result.reviewRequired).toBe(true)
+  })
+
+  test("returns HIGH for npm-shrinkwrap.json", () => {
+    const result = analyzeDiffRisk(["npm-shrinkwrap.json"])
+    expect(result.risk).toBe("high")
+    expect(result.reasons).toEqual(["Lockfile modified"])
+    expect(result.reviewRequired).toBe(true)
+  })
+
+  test("does not false-positive on unrelated lock-like filenames", () => {
+    const result = analyzeDiffRisk(["docs/lockfile-guide.md"])
+    expect(result.risk).toBe("low")
+    expect(result.reasons).toEqual(["Documentation modified"])
+  })
+
+  test("nested package.json plus docs returns high", () => {
+    const result = analyzeDiffRisk(["packages/sdk/package.json", "README.md"])
+    expect(result.risk).toBe("high")
+    expect(result.reasons).toContain("Package manifest modified")
+    expect(result.reasons).toContain("Documentation modified")
+    expect(result.reviewRequired).toBe(true)
+  })
 })

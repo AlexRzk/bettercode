@@ -204,6 +204,72 @@ describe("brainUpdate", () => {
     expect(startCount).toBe(1)
   })
 
+  test("preserves unheaded notes after generated commands", async () => {
+    const dir = createFixture("update-unheaded-commands")
+    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    writeFileSync(
+      join(dir, ".better-code", "brain", "profile.md"),
+      [
+        "# Project Profile",
+        "",
+        "## Stack",
+        "- Type: node",
+        "",
+        "## Package Manager",
+        "- npm",
+        "",
+        "## Available Commands",
+        "- lint: npm run lint",
+        "",
+        "Remember: CI is flaky on Windows",
+        "",
+      ].join("\n"),
+    )
+
+    await brainUpdate(dir)
+
+    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    expect(profile).toContain("Remember: CI is flaky on Windows")
+    expect(profile).not.toContain("- lint: npm run lint")
+    expect(profile).toContain("<!-- better-code:generated-profile:start -->")
+    expect(profile).toContain("<!-- better-code:generated-profile:end -->")
+    const startCount = (profile.match(/<!-- better-code:generated-profile:start -->/g) || []).length
+    expect(startCount).toBe(1)
+  })
+
+  test("preserves unheaded notes after generated stack rows", async () => {
+    const dir = createFixture("update-unheaded-stack")
+    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    writeFileSync(
+      join(dir, ".better-code", "brain", "profile.md"),
+      [
+        "# Project Profile",
+        "",
+        "## Stack",
+        "- Type: old-type",
+        "- Signals: old-signal",
+        "",
+        "This project has special deployment needs.",
+        "",
+        "## Package Manager",
+        "- npm",
+        "",
+        "## Available Commands",
+        "- lint: npm run lint",
+        "",
+      ].join("\n"),
+    )
+
+    await brainUpdate(dir)
+
+    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    expect(profile).toContain("This project has special deployment needs.")
+    expect(profile).not.toContain("old-type")
+    expect(profile).not.toContain("old-signal")
+    expect(profile).toContain("<!-- better-code:generated-profile:start -->")
+    expect(profile).toContain("<!-- better-code:generated-profile:end -->")
+  })
+
   test("preserves custom markerless notes that are not legacy generated", async () => {
     const dir = createFixture("update-custom-no-markers")
     mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })

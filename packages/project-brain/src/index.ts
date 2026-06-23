@@ -39,29 +39,54 @@ function isLegacyGeneratedProfile(content: string): boolean {
 }
 
 const legacyGeneratedHeadings = ["## stack", "## package manager", "## available commands", "## critical paths"]
+const packageManagerValues = ["npm", "pnpm", "yarn", "bun"]
+
+function isLegacyGeneratedRow(line: string, activeHeading: string): boolean {
+  const trimmed = line.trim()
+  if (!trimmed.startsWith("- ")) return false
+
+  if (activeHeading === "## stack") {
+    return /^- (Type|Signals): /.test(trimmed)
+  }
+  if (activeHeading === "## package manager") {
+    const value = trimmed.slice(2).toLowerCase()
+    return packageManagerValues.includes(value)
+  }
+  if (activeHeading === "## available commands") {
+    return /^- \w[\w-]*: .+/.test(trimmed)
+  }
+  if (activeHeading === "## critical paths") {
+    return /^- .+/.test(trimmed)
+  }
+  return false
+}
 
 function migrateLegacyProfile(content: string): string {
   const lines = content.split("\n")
   const preserved: string[] = []
-  let i = 0
+  let activeHeading = ""
 
-  while (i < lines.length) {
-    const line = lines[i]!
+  for (const line of lines) {
     const lower = line.trim().toLowerCase()
 
-    if (lower === "# project profile") {
-      i++
+    if (lower === "# project profile") continue
+
+    if (legacyGeneratedHeadings.includes(lower)) {
+      activeHeading = lower
       continue
     }
 
-    if (legacyGeneratedHeadings.includes(lower)) {
-      i++
-      while (i < lines.length && !lines[i]!.trim().startsWith("##")) i++
+    if (lower.startsWith("## ")) {
+      activeHeading = ""
+      preserved.push(line)
+      continue
+    }
+
+    if (activeHeading && isLegacyGeneratedRow(line, activeHeading)) {
       continue
     }
 
     preserved.push(line)
-    i++
   }
 
   const cleaned = preserved.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd()

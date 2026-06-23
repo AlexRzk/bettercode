@@ -53,7 +53,7 @@ function isLegacyGeneratedRow(line: string, activeHeading: string): boolean {
     return packageManagerValues.includes(value)
   }
   if (activeHeading === "## available commands") {
-    return /^- \w[\w-]*: .+/.test(trimmed)
+    return /^- (lint|typecheck|test|build|format|format:check): .+/.test(trimmed)
   }
   if (activeHeading === "## critical paths") {
     return /^- .+/.test(trimmed)

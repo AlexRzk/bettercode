@@ -272,6 +272,38 @@ describe("brainUpdate", () => {
     expect(startCount).toBe(1)
   })
 
+  test("removes legacy generated command rows with colon names", async () => {
+    const dir = createFixture("update-colon-command")
+    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    writeFileSync(join(dir, "package.json"), JSON.stringify({ scripts: { "format:check": "prettier --check ." } }))
+    writeFileSync(
+      join(dir, ".better-code", "brain", "profile.md"),
+      [
+        "# Project Profile",
+        "",
+        "## Stack",
+        "- Type: node",
+        "",
+        "## Package Manager",
+        "- npm",
+        "",
+        "## Available Commands",
+        "- lint: npm run lint",
+        "- format:check: npm run format:check",
+        "",
+      ].join("\n"),
+    )
+
+    await brainUpdate(dir)
+
+    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    const formatCheckCount = (profile.match(/- format:check: npm run format:check/g) || []).length
+    expect(formatCheckCount).toBe(1)
+    expect(profile).not.toContain("- lint: npm run lint")
+    const startCount = (profile.match(/<!-- better-code:generated-profile:start -->/g) || []).length
+    expect(startCount).toBe(1)
+  })
+
   test("preserves unheaded notes after generated stack rows", async () => {
     const dir = createFixture("update-unheaded-stack")
     mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })

@@ -1,6 +1,134 @@
-export function createPlaceholderProjectBrain() {
-  return {
-    initialized: false,
-    message: "Project brain placeholder is ready.",
+import { existsSync, readFileSync } from "node:fs"
+import { mkdir, readFile, writeFile, appendFile } from "node:fs/promises"
+import { join } from "node:path"
+import { detectProject, detectPackageManager, detectAvailableCommands } from "@better-code/quality-gate"
+
+const brainDir = ".better-code/brain"
+
+const brainFiles = [
+  { name: "profile.md", content: "# Project Profile\n\n" },
+  { name: "commands.md", content: "# Commands\n\n" },
+  { name: "architecture.md", content: "# Architecture\n\n" },
+  { name: "known-errors.md", content: "# Known Errors\n\n" },
+  { name: "quality-rules.md", content: "# Quality Rules\n\n" },
+  { name: "task-history.jsonl", content: "" },
+]
+
+export async function brainInit(rootPath: string): Promise<string[]> {
+  const dir = join(rootPath, brainDir)
+  await mkdir(dir, { recursive: true })
+
+  const created: string[] = []
+  for (const file of brainFiles) {
+    const filePath = join(dir, file.name)
+    if (!existsSync(filePath)) {
+      await writeFile(filePath, file.content)
+      created.push(file.name)
+    }
   }
+  return created
+}
+
+export async function brainUpdate(rootPath: string): Promise<{ profileUpdated: boolean; historyAppended: boolean }> {
+  const dir = join(rootPath, brainDir)
+  await mkdir(dir, { recursive: true })
+
+  const project = detectProject(rootPath)
+  const packageManager = detectPackageManager(rootPath)
+  const commands = detectAvailableCommands(rootPath)
+
+  const profileLines = [
+    "# Project Profile",
+    "",
+    `## Stack`,
+    `- Type: ${project.type}`,
+    `- Signals: ${project.signals.length > 0 ? project.signals.join(", ") : "none detected"}`,
+    "",
+    `## Package Manager`,
+    `- ${packageManager}`,
+    "",
+    `## Available Commands`,
+  ]
+
+  for (const [name, cmd] of Object.entries(commands)) {
+    if (cmd && typeof cmd === "object" && "command" in cmd) {
+      profileLines.push(`- ${name}: ${(cmd as { command: string }).command}`)
+    }
+  }
+
+  const configPath = join(rootPath, ".better-code", "quality-gate.json")
+  if (existsSync(configPath)) {
+    try {
+      const config = JSON.parse(readFileSync(configPath, "utf8"))
+      if (Array.isArray(config.criticalPaths) && config.criticalPaths.length > 0) {
+        profileLines.push("", "## Critical Paths")
+        for (const p of config.criticalPaths) {
+          profileLines.push(`- ${p}`)
+        }
+      }
+    } catch {
+      // ignore invalid config
+    }
+  }
+
+  profileLines.push("")
+  const profilePath = join(dir, "profile.md")
+  await writeFile(profilePath, profileLines.join("\n"))
+
+  let historyAppended = false
+  const gateResultPath = join(rootPath, ".better-code", "last-gate-result.json")
+  if (existsSync(gateResultPath)) {
+    try {
+      const result = JSON.parse(readFileSync(gateResultPath, "utf8"))
+      const entry = {
+        timestamp: new Date().toISOString(),
+        status: result.status,
+        score: result.score,
+        risk: result.risk,
+      }
+      await appendFile(join(dir, "task-history.jsonl"), JSON.stringify(entry) + "\n")
+      historyAppended = true
+    } catch {
+      // ignore invalid result
+    }
+  }
+
+  return { profileUpdated: true, historyAppended }
+}
+
+export function brainSearch(rootPath: string, query: string): SearchResult[] {
+  const dir = join(rootPath, brainDir)
+  if (!existsSync(dir)) return []
+
+  const results: SearchResult[] = []
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean)
+
+  for (const file of brainFiles) {
+    if (file.name.endsWith(".jsonl")) continue
+    const filePath = join(dir, file.name)
+    if (!existsSync(filePath)) continue
+
+    const content = readFileSync(filePath, "utf8")
+    const lines = content.split("\n")
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]!
+      const lower = line.toLowerCase()
+      if (terms.every((term) => lower.includes(term))) {
+        results.push({
+          file: file.name,
+          line: i + 1,
+          content: line.trim(),
+        })
+      }
+    }
+  }
+
+  return results
+}
+
+export interface SearchResult {
+  file: string
+  line: number
+  content: string
 }

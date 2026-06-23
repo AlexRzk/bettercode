@@ -3,6 +3,7 @@
 import { mkdir, stat } from "node:fs/promises"
 import { dirname, join, parse } from "node:path"
 import { runQualityGate } from "@better-code/quality-gate"
+import { brainInit, brainUpdate, brainSearch } from "@better-code/project-brain"
 
 type PlaceholderCommand = {
   path: string[]
@@ -40,30 +41,31 @@ const commands: PlaceholderCommand[] = [
   { path: ["init"], description: "Initialize Better Code configuration." },
   { path: ["gate", "run"], description: "Run adaptive quality gates." },
   { path: ["brain", "init"], description: "Initialize the project brain." },
+  { path: ["brain", "update"], description: "Update the project brain profile." },
+  { path: ["brain", "search", "<query>"], description: "Search the project brain by keyword." },
   { path: ["benchmark", "run"], description: "Run comparative benchmarks." },
   { path: ["report"], description: "Generate a Better Code report." },
 ]
 
 const args = process.argv.slice(2)
-const command = commands.find((item) => item.path.length === args.length && item.path.every((part, index) => part === args[index]))
 
-if (!command) {
-  console.log("better-code")
-  console.log("")
-  console.log("Available commands:")
-  for (const item of commands) console.log(`  better-code ${item.path.join(" ")} - ${item.description}`)
-  process.exit(args.length === 0 ? 0 : 1)
-}
-
-if (command.path[0] === "init") {
-  await initBetterCode(process.cwd())
+if (args.length === 0) {
+  printHelp()
   process.exit(0)
 }
 
-if (command.path[0] === "gate" && command.path[1] === "run") {
-  const result = await runQualityGate(process.cwd())
+const root = await findRepoRoot(process.cwd())
+
+if (args[0] === "init") {
+  await initBetterCode(root)
+  process.exit(0)
+}
+
+if (args[0] === "gate" && args[1] === "run") {
+  const result = await runQualityGate(root)
   console.log(`Better Code quality gate: ${result.status}`)
   console.log(`Score: ${result.score}`)
+  console.log(`Risk: ${result.risk}`)
   for (const check of result.checks) {
     const detail = check.status === "SKIPPED" ? ` - ${check.reason}` : ` - ${check.command} (${check.durationMs}ms)`
     console.log(`${check.status} ${check.name}${detail}`)
@@ -72,12 +74,50 @@ if (command.path[0] === "gate" && command.path[1] === "run") {
   process.exit(result.status === "FAIL" ? 1 : 0)
 }
 
-console.log(`better-code ${command.path.join(" ")}`)
-console.log(`${command.description} Placeholder command is ready.`)
+if (args[0] === "brain" && args[1] === "init") {
+  const created = await brainInit(root)
+  if (created.length === 0) {
+    console.log("Brain already initialized. No files created.")
+  } else {
+    console.log("Brain initialized.")
+    for (const file of created) console.log(`  Created .better-code/brain/${file}`)
+  }
+  process.exit(0)
+}
 
-async function initBetterCode(root: string) {
-  const repoRoot = await findRepoRoot(root)
+if (args[0] === "brain" && args[1] === "update") {
+  const result = await brainUpdate(root)
+  console.log("Brain updated.")
+  console.log(`  Profile: ${result.profileUpdated ? "updated" : "unchanged"}`)
+  console.log(`  History: ${result.historyAppended ? "entry appended" : "no entry"}`)
+  process.exit(0)
+}
 
+if (args[0] === "brain" && args[1] === "search" && args.length >= 3) {
+  const query = args.slice(2).join(" ")
+  const results = brainSearch(root, query)
+  if (results.length === 0) {
+    console.log(`No results for "${query}".`)
+  } else {
+    console.log(`${results.length} result(s) for "${query}":`)
+    for (const r of results) {
+      console.log(`  ${r.file}:${r.line} - ${r.content}`)
+    }
+  }
+  process.exit(0)
+}
+
+printHelp()
+process.exit(1)
+
+function printHelp() {
+  console.log("better-code")
+  console.log("")
+  console.log("Available commands:")
+  for (const item of commands) console.log(`  better-code ${item.path.join(" ")} - ${item.description}`)
+}
+
+async function initBetterCode(repoRoot: string) {
   await mkdir(join(repoRoot, ".better-code", "brain"), { recursive: true })
   await writeMissing(join(repoRoot, ".better-code", "quality-gate.json"), `${JSON.stringify(defaultQualityGate, null, 2)}\n`)
   await writeMissing(join(repoRoot, ".better-code", "brain", "profile.md"), "# Project Profile\n\n")

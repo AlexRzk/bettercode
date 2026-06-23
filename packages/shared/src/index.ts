@@ -100,3 +100,13 @@ export interface BenchmarkResult {
   duration_ms: number
   metadata?: Record<string, unknown>
 }
+
+export type QualityGateCommandConfig = "auto" | string
+
+export interface QualityGateConfig {
+  version?: number
+  thresholds?: Partial<QualityGateThresholds>
+  rules?: Partial<QualityGateRules>
+  commands?: Partial<Record<ProjectCommandName, QualityGateCommandConfig>>
+  criticalPaths?: string[]
+}

@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from "node:fs"
 import { join } from "node:path"
-import { analyzeDiffRisk, analyzeGitDiff } from "@better-code/diff-risk"
+import { analyzeDiffRisk, analyzeGitDiff } from "@bettercode/diff-risk"
 
 export interface Spec {
   goal: string
@@ -46,7 +46,7 @@ export async function generateSpec(root: string, description: string): Promise<S
 
   let brainContext = ""
   try {
-    const brainPath = join(root, ".better-code", "brain", "profile.md")
+    const brainPath = join(root, ".bettercode", "brain", "profile.md")
     if (existsSync(brainPath)) {
       brainContext = readFileSync(brainPath, "utf8")
     }

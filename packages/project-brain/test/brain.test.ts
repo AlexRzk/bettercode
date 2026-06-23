@@ -30,18 +30,18 @@ describe("brainInit", () => {
     expect(created).toContain("known-errors.md")
     expect(created).toContain("quality-rules.md")
     expect(created).toContain("task-history.jsonl")
-    expect(existsSync(join(dir, ".better-code", "brain", "profile.md"))).toBe(true)
+    expect(existsSync(join(dir, ".bettercode", "brain", "profile.md"))).toBe(true)
   })
 
   test("does not overwrite existing files", async () => {
     const dir = createFixture("init-existing")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
-    writeFileSync(join(dir, ".better-code", "brain", "profile.md"), "# Custom Profile\n")
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
+    writeFileSync(join(dir, ".bettercode", "brain", "profile.md"), "# Custom Profile\n")
 
     const created = await brainInit(dir)
 
     expect(created).not.toContain("profile.md")
-    expect(readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")).toBe("# Custom Profile\n")
+    expect(readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")).toBe("# Custom Profile\n")
   })
 
   test("returns empty array when all files exist", async () => {
@@ -56,13 +56,13 @@ describe("brainInit", () => {
 describe("brainUpdate", () => {
   test("updates profile.md with detected stack", async () => {
     const dir = createFixture("update-stack")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
     writeFileSync(join(dir, "package.json"), JSON.stringify({ scripts: { lint: "echo ok" } }))
 
     const result = await brainUpdate(dir)
 
     expect(result.profileUpdated).toBe(true)
-    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    const profile = readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")
     expect(profile).toContain("## Stack")
     expect(profile).toContain("## Package Manager")
     expect(profile).toContain("## Available Commands")
@@ -71,33 +71,33 @@ describe("brainUpdate", () => {
 
   test("does not erase existing profile content", async () => {
     const dir = createFixture("update-preserve")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
-    writeFileSync(join(dir, ".better-code", "brain", "profile.md"), "# Existing\n\nCustom content\n")
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
+    writeFileSync(join(dir, ".bettercode", "brain", "profile.md"), "# Existing\n\nCustom content\n")
 
     await brainUpdate(dir)
 
-    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    const profile = readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")
     expect(profile).toContain("Custom content")
-    expect(profile).toContain("<!-- better-code:generated-profile:start -->")
-    expect(profile).toContain("<!-- better-code:generated-profile:end -->")
+    expect(profile).toContain("<!-- bettercode:generated-profile:start -->")
+    expect(profile).toContain("<!-- bettercode:generated-profile:end -->")
     expect(profile).toContain("## Stack")
   })
 
   test("replaces generated section when markers exist", async () => {
     const dir = createFixture("update-replace")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
     writeFileSync(
-      join(dir, ".better-code", "brain", "profile.md"),
+      join(dir, ".bettercode", "brain", "profile.md"),
       [
         "# My Notes",
         "",
         "Important observation:",
         "- this project uses bun",
         "",
-        "<!-- better-code:generated-profile:start -->",
+        "<!-- bettercode:generated-profile:start -->",
         "## Old Stack",
         "- Type: old-type",
-        "<!-- better-code:generated-profile:end -->",
+        "<!-- bettercode:generated-profile:end -->",
         "",
         "Footer note stays.",
         "",
@@ -106,7 +106,7 @@ describe("brainUpdate", () => {
 
     await brainUpdate(dir)
 
-    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    const profile = readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")
     expect(profile).toContain("# My Notes")
     expect(profile).toContain("Important observation:")
     expect(profile).toContain("this project uses bun")
@@ -114,28 +114,28 @@ describe("brainUpdate", () => {
     expect(profile).toContain("## Stack")
     expect(profile).not.toContain("## Old Stack")
     expect(profile).not.toContain("old-type")
-    const startCount = (profile.match(/<!-- better-code:generated-profile:start -->/g) || []).length
+    const startCount = (profile.match(/<!-- bettercode:generated-profile:start -->/g) || []).length
     expect(startCount).toBe(1)
   })
 
   test("creates profile with markers when absent", async () => {
     const dir = createFixture("update-new-profile")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
 
     await brainUpdate(dir)
 
-    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    const profile = readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")
     expect(profile).toContain("# Project Profile")
-    expect(profile).toContain("<!-- better-code:generated-profile:start -->")
-    expect(profile).toContain("<!-- better-code:generated-profile:end -->")
+    expect(profile).toContain("<!-- bettercode:generated-profile:start -->")
+    expect(profile).toContain("<!-- bettercode:generated-profile:end -->")
     expect(profile).toContain("## Stack")
   })
 
   test("migrates legacy markerless generated profile", async () => {
     const dir = createFixture("update-legacy")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
     writeFileSync(
-      join(dir, ".better-code", "brain", "profile.md"),
+      join(dir, ".bettercode", "brain", "profile.md"),
       [
         "# Project Profile",
         "",
@@ -154,23 +154,23 @@ describe("brainUpdate", () => {
 
     await brainUpdate(dir)
 
-    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    const profile = readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")
     expect(profile).not.toContain("old-type")
     expect(profile).not.toContain("old-signal")
-    expect(profile).toContain("<!-- better-code:generated-profile:start -->")
-    expect(profile).toContain("<!-- better-code:generated-profile:end -->")
+    expect(profile).toContain("<!-- bettercode:generated-profile:start -->")
+    expect(profile).toContain("<!-- bettercode:generated-profile:end -->")
     expect(profile).toContain("## Stack")
     expect(profile).toContain("## Package Manager")
     expect(profile).toContain("## Available Commands")
-    const startCount = (profile.match(/<!-- better-code:generated-profile:start -->/g) || []).length
+    const startCount = (profile.match(/<!-- bettercode:generated-profile:start -->/g) || []).length
     expect(startCount).toBe(1)
   })
 
   test("migrates legacy profile while preserving user notes", async () => {
     const dir = createFixture("update-legacy-notes")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
     writeFileSync(
-      join(dir, ".better-code", "brain", "profile.md"),
+      join(dir, ".bettercode", "brain", "profile.md"),
       [
         "# Project Profile",
         "",
@@ -193,22 +193,22 @@ describe("brainUpdate", () => {
 
     await brainUpdate(dir)
 
-    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    const profile = readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")
     expect(profile).toContain("Custom note before generated content.")
     expect(profile).toContain("## Custom Section")
     expect(profile).toContain("user data that must survive")
     expect(profile).not.toContain("old-type")
-    expect(profile).toContain("<!-- better-code:generated-profile:start -->")
-    expect(profile).toContain("<!-- better-code:generated-profile:end -->")
-    const startCount = (profile.match(/<!-- better-code:generated-profile:start -->/g) || []).length
+    expect(profile).toContain("<!-- bettercode:generated-profile:start -->")
+    expect(profile).toContain("<!-- bettercode:generated-profile:end -->")
+    const startCount = (profile.match(/<!-- bettercode:generated-profile:start -->/g) || []).length
     expect(startCount).toBe(1)
   })
 
   test("preserves unheaded notes after generated commands", async () => {
     const dir = createFixture("update-unheaded-commands")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
     writeFileSync(
-      join(dir, ".better-code", "brain", "profile.md"),
+      join(dir, ".bettercode", "brain", "profile.md"),
       [
         "# Project Profile",
         "",
@@ -228,20 +228,20 @@ describe("brainUpdate", () => {
 
     await brainUpdate(dir)
 
-    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    const profile = readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")
     expect(profile).toContain("Remember: CI is flaky on Windows")
     expect(profile).not.toContain("- lint: npm run lint")
-    expect(profile).toContain("<!-- better-code:generated-profile:start -->")
-    expect(profile).toContain("<!-- better-code:generated-profile:end -->")
-    const startCount = (profile.match(/<!-- better-code:generated-profile:start -->/g) || []).length
+    expect(profile).toContain("<!-- bettercode:generated-profile:start -->")
+    expect(profile).toContain("<!-- bettercode:generated-profile:end -->")
+    const startCount = (profile.match(/<!-- bettercode:generated-profile:start -->/g) || []).length
     expect(startCount).toBe(1)
   })
 
   test("preserves bullet notes after generated commands once custom notes start", async () => {
     const dir = createFixture("update-command-bullets")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
     writeFileSync(
-      join(dir, ".better-code", "brain", "profile.md"),
+      join(dir, ".bettercode", "brain", "profile.md"),
       [
         "# Project Profile",
         "",
@@ -263,21 +263,21 @@ describe("brainUpdate", () => {
 
     await brainUpdate(dir)
 
-    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    const profile = readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")
     expect(profile).toContain("Operational notes:")
     expect(profile).toContain("- owner: platform")
     expect(profile).toContain("- escalation: qa")
     expect(profile).not.toContain("- lint: npm run lint")
-    const startCount = (profile.match(/<!-- better-code:generated-profile:start -->/g) || []).length
+    const startCount = (profile.match(/<!-- bettercode:generated-profile:start -->/g) || []).length
     expect(startCount).toBe(1)
   })
 
   test("removes legacy generated command rows with colon names", async () => {
     const dir = createFixture("update-colon-command")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
     writeFileSync(join(dir, "package.json"), JSON.stringify({ scripts: { "format:check": "prettier --check ." } }))
     writeFileSync(
-      join(dir, ".better-code", "brain", "profile.md"),
+      join(dir, ".bettercode", "brain", "profile.md"),
       [
         "# Project Profile",
         "",
@@ -296,19 +296,19 @@ describe("brainUpdate", () => {
 
     await brainUpdate(dir)
 
-    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    const profile = readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")
     const formatCheckCount = (profile.match(/- format:check: npm run format:check/g) || []).length
     expect(formatCheckCount).toBe(1)
     expect(profile).not.toContain("- lint: npm run lint")
-    const startCount = (profile.match(/<!-- better-code:generated-profile:start -->/g) || []).length
+    const startCount = (profile.match(/<!-- bettercode:generated-profile:start -->/g) || []).length
     expect(startCount).toBe(1)
   })
 
   test("preserves unheaded notes after generated stack rows", async () => {
     const dir = createFixture("update-unheaded-stack")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
     writeFileSync(
-      join(dir, ".better-code", "brain", "profile.md"),
+      join(dir, ".bettercode", "brain", "profile.md"),
       [
         "# Project Profile",
         "",
@@ -329,21 +329,21 @@ describe("brainUpdate", () => {
 
     await brainUpdate(dir)
 
-    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    const profile = readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")
     expect(profile).toContain("This project has special deployment needs.")
     expect(profile).not.toContain("old-type")
     expect(profile).not.toContain("old-signal")
-    expect(profile).toContain("<!-- better-code:generated-profile:start -->")
-    expect(profile).toContain("<!-- better-code:generated-profile:end -->")
+    expect(profile).toContain("<!-- bettercode:generated-profile:start -->")
+    expect(profile).toContain("<!-- bettercode:generated-profile:end -->")
   })
 
   test("preserves bullet notes after generated critical paths once custom notes start", async () => {
     const dir = createFixture("update-critical-bullets")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
-    mkdirSync(join(dir, ".better-code"), { recursive: true })
-    writeFileSync(join(dir, ".better-code", "quality-gate.json"), JSON.stringify({ criticalPaths: ["src/auth/**"] }))
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
+    mkdirSync(join(dir, ".bettercode"), { recursive: true })
+    writeFileSync(join(dir, ".bettercode", "quality-gate.json"), JSON.stringify({ criticalPaths: ["src/auth/**"] }))
     writeFileSync(
-      join(dir, ".better-code", "brain", "profile.md"),
+      join(dir, ".bettercode", "brain", "profile.md"),
       [
         "# Project Profile",
         "",
@@ -368,21 +368,21 @@ describe("brainUpdate", () => {
 
     await brainUpdate(dir)
 
-    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    const profile = readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")
     expect(profile).toContain("Critical path owner notes:")
     expect(profile).toContain("- owner: security")
     expect(profile).toContain("- review cadence: weekly")
     expect(profile).not.toContain("- old/generated/**")
     expect(profile).toContain("- src/auth/**")
-    const startCount = (profile.match(/<!-- better-code:generated-profile:start -->/g) || []).length
+    const startCount = (profile.match(/<!-- bettercode:generated-profile:start -->/g) || []).length
     expect(startCount).toBe(1)
   })
 
   test("preserves custom markerless notes that are not legacy generated", async () => {
     const dir = createFixture("update-custom-no-markers")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
     writeFileSync(
-      join(dir, ".better-code", "brain", "profile.md"),
+      join(dir, ".bettercode", "brain", "profile.md"),
       [
         "# My Project Notes",
         "",
@@ -397,27 +397,27 @@ describe("brainUpdate", () => {
 
     await brainUpdate(dir)
 
-    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    const profile = readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")
     expect(profile).toContain("# My Project Notes")
     expect(profile).toContain("some custom note")
     expect(profile).toContain("## Custom Section")
     expect(profile).toContain("user data")
-    expect(profile).toContain("<!-- better-code:generated-profile:start -->")
-    expect(profile).toContain("<!-- better-code:generated-profile:end -->")
+    expect(profile).toContain("<!-- bettercode:generated-profile:start -->")
+    expect(profile).toContain("<!-- bettercode:generated-profile:end -->")
   })
 
   test("appends to task-history.jsonl when gate result exists", async () => {
     const dir = createFixture("update-history")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
     writeFileSync(
-      join(dir, ".better-code", "last-gate-result.json"),
+      join(dir, ".bettercode", "last-gate-result.json"),
       JSON.stringify({ status: "PASS", score: 95, risk: "low" }),
     )
 
     const result = await brainUpdate(dir)
 
     expect(result.historyAppended).toBe(true)
-    const history = readFileSync(join(dir, ".better-code", "brain", "task-history.jsonl"), "utf8")
+    const history = readFileSync(join(dir, ".bettercode", "brain", "task-history.jsonl"), "utf8")
     const lines = history.trim().split("\n")
     expect(lines.length).toBe(1)
     const entry = JSON.parse(lines[0]!)
@@ -429,7 +429,7 @@ describe("brainUpdate", () => {
 
   test("does not append when no gate result exists", async () => {
     const dir = createFixture("update-no-history")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
 
     const result = await brainUpdate(dir)
 
@@ -438,15 +438,15 @@ describe("brainUpdate", () => {
 
   test("includes critical paths from config", async () => {
     const dir = createFixture("update-critical")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
     writeFileSync(
-      join(dir, ".better-code", "quality-gate.json"),
+      join(dir, ".bettercode", "quality-gate.json"),
       JSON.stringify({ criticalPaths: ["src/auth/**", "prisma/migrations/**"] }),
     )
 
     await brainUpdate(dir)
 
-    const profile = readFileSync(join(dir, ".better-code", "brain", "profile.md"), "utf8")
+    const profile = readFileSync(join(dir, ".bettercode", "brain", "profile.md"), "utf8")
     expect(profile).toContain("## Critical Paths")
     expect(profile).toContain("src/auth/**")
     expect(profile).toContain("prisma/migrations/**")
@@ -456,8 +456,8 @@ describe("brainUpdate", () => {
 describe("brainSearch", () => {
   test("finds matching lines in brain files", async () => {
     const dir = createFixture("search-match")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
-    writeFileSync(join(dir, ".better-code", "brain", "quality-rules.md"), "# Quality Rules\n\n- Always run tests before commit\n- No secrets in code\n")
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
+    writeFileSync(join(dir, ".bettercode", "brain", "quality-rules.md"), "# Quality Rules\n\n- Always run tests before commit\n- No secrets in code\n")
 
     const results = brainSearch(dir, "tests")
 
@@ -468,8 +468,8 @@ describe("brainSearch", () => {
 
   test("returns empty for no matches", async () => {
     const dir = createFixture("search-empty")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
-    writeFileSync(join(dir, ".better-code", "brain", "quality-rules.md"), "# Quality Rules\n\n- Always run tests\n")
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
+    writeFileSync(join(dir, ".bettercode", "brain", "quality-rules.md"), "# Quality Rules\n\n- Always run tests\n")
 
     const results = brainSearch(dir, "nonexistent")
 
@@ -484,9 +484,9 @@ describe("brainSearch", () => {
 
   test("searches across multiple brain files", async () => {
     const dir = createFixture("search-multi")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
-    writeFileSync(join(dir, ".better-code", "brain", "profile.md"), "# Profile\n\nStack: node\n")
-    writeFileSync(join(dir, ".better-code", "brain", "known-errors.md"), "# Known Errors\n\n- ECONNREFUSED when DB is down\n")
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
+    writeFileSync(join(dir, ".bettercode", "brain", "profile.md"), "# Profile\n\nStack: node\n")
+    writeFileSync(join(dir, ".bettercode", "brain", "known-errors.md"), "# Known Errors\n\n- ECONNREFUSED when DB is down\n")
 
     const results = brainSearch(dir, "db")
 
@@ -496,8 +496,8 @@ describe("brainSearch", () => {
 
   test("supports multi-term search", async () => {
     const dir = createFixture("search-multi-term")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
-    writeFileSync(join(dir, ".better-code", "brain", "quality-rules.md"), "# Quality Rules\n\n- Run lint before commit\n- Run test before push\n")
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
+    writeFileSync(join(dir, ".bettercode", "brain", "quality-rules.md"), "# Quality Rules\n\n- Run lint before commit\n- Run test before push\n")
 
     const results = brainSearch(dir, "run lint")
 
@@ -507,9 +507,9 @@ describe("brainSearch", () => {
 
   test("skips task-history.jsonl", async () => {
     const dir = createFixture("search-skip-jsonl")
-    mkdirSync(join(dir, ".better-code", "brain"), { recursive: true })
-    writeFileSync(join(dir, ".better-code", "brain", "task-history.jsonl"), '{"status":"PASS"}\n')
-    writeFileSync(join(dir, ".better-code", "brain", "profile.md"), "# Profile\n\n- Important rule\n")
+    mkdirSync(join(dir, ".bettercode", "brain"), { recursive: true })
+    writeFileSync(join(dir, ".bettercode", "brain", "task-history.jsonl"), '{"status":"PASS"}\n')
+    writeFileSync(join(dir, ".bettercode", "brain", "profile.md"), "# Profile\n\n- Important rule\n")
 
     const results = brainSearch(dir, "PASS")
 

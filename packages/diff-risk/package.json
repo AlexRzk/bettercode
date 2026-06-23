@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@better-code/diff-risk",
+  "name": "@bettercode/diff-risk",
   "type": "module",
   "license": "MIT",
   "private": true,
@@ -13,7 +13,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@better-code/shared": "workspace:*"
+    "@bettercode/shared": "workspace:*"
   },
   "devDependencies": {
     "@tsconfig/bun": "catalog:",

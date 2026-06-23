@@ -2,8 +2,8 @@
 
 import { mkdir, stat } from "node:fs/promises"
 import { dirname, join, parse } from "node:path"
-import { runQualityGate } from "@better-code/quality-gate"
-import { brainInit, brainUpdate, brainSearch } from "@better-code/project-brain"
+import { runQualityGate } from "@bettercode/quality-gate"
+import { brainInit, brainUpdate, brainSearch } from "@bettercode/project-brain"
 import { generateSpec } from "./spec"
 
 type PlaceholderCommand = {
@@ -38,15 +38,17 @@ const defaultQualityGate = {
   criticalPaths: ["src/auth/**", "src/middleware.ts", "src/app/api/**", "prisma/migrations/**"],
 }
 
+const configDir = ".bettercode"
+
 const commands: PlaceholderCommand[] = [
-  { path: ["init"], description: "Initialize Better Code configuration." },
+  { path: ["init"], description: "Initialize BetterCode configuration." },
   { path: ["gate", "run"], description: "Run adaptive quality gates." },
   { path: ["brain", "init"], description: "Initialize the project brain." },
   { path: ["brain", "update"], description: "Update the project brain profile." },
   { path: ["brain", "search", "<query>"], description: "Search the project brain by keyword." },
   { path: ["spec", "<description>"], description: "Generate a mini-spec before modification." },
   { path: ["benchmark", "run"], description: "Run comparative benchmarks." },
-  { path: ["report"], description: "Generate a Better Code report." },
+  { path: ["report"], description: "Generate a BetterCode report." },
 ]
 
 const args = process.argv.slice(2)
@@ -57,6 +59,7 @@ if (args.length === 0) {
 }
 
 const root = await findRepoRoot(process.cwd())
+migrateLegacyConfig(root)
 
 if (args[0] === "init") {
   await initBetterCode(root)
@@ -65,7 +68,7 @@ if (args[0] === "init") {
 
 if (args[0] === "gate" && args[1] === "run") {
   const result = await runQualityGate(root)
-  console.log(`Better Code quality gate: ${result.status}`)
+  console.log(`BetterCode quality gate: ${result.status}`)
   console.log(`Score: ${result.score}`)
   console.log(`Risk: ${result.risk}`)
   for (const check of result.checks) {
@@ -82,7 +85,7 @@ if (args[0] === "brain" && args[1] === "init") {
     console.log("Brain already initialized. No files created.")
   } else {
     console.log("Brain initialized.")
-    for (const file of created) console.log(`  Created .better-code/brain/${file}`)
+    for (const file of created) console.log(`  Created ${configDir}/brain/${file}`)
   }
   process.exit(0)
 }
@@ -120,25 +123,66 @@ printHelp()
 process.exit(1)
 
 function printHelp() {
-  console.log("better-code")
+  console.log("bettercode")
   console.log("")
   console.log("Available commands:")
-  for (const item of commands) console.log(`  better-code ${item.path.join(" ")} - ${item.description}`)
+  for (const item of commands) console.log(`  bettercode ${item.path.join(" ")} - ${item.description}`)
+}
+
+function migrateLegacyConfig(repoRoot: string) {
+  const legacyDir = join(repoRoot, ".better-code")
+  const newDir = join(repoRoot, configDir)
+
+  if (!statSafe(legacyDir)) return
+  if (statSafe(newDir)) return
+
+  try {
+    const { readdirSync, copyFileSync, mkdirSync } = require("node:fs")
+    mkdirSync(newDir, { recursive: true })
+    mkdirSync(join(newDir, "brain"), { recursive: true })
+
+    for (const file of readdirSync(legacyDir)) {
+      const src = join(legacyDir, file)
+      const dest = join(newDir, file)
+      if (statSafe(src)) copyFileSync(src, dest)
+    }
+
+    const brainSrc = join(legacyDir, "brain")
+    if (statSafe(brainSrc)) {
+      for (const file of readdirSync(brainSrc)) {
+        const src = join(brainSrc, file)
+        const dest = join(newDir, "brain", file)
+        if (statSafe(src)) copyFileSync(src, dest)
+      }
+    }
+
+    console.log(`Migrated .better-code/ to ${configDir}/`)
+  } catch {
+    // ignore migration errors
+  }
+}
+
+function statSafe(p: string) {
+  try {
+    return require("node:fs").statSync(p)
+  } catch {
+    return null
+  }
 }
 
 async function initBetterCode(repoRoot: string) {
-  await mkdir(join(repoRoot, ".better-code", "brain"), { recursive: true })
-  await writeMissing(join(repoRoot, ".better-code", "quality-gate.json"), `${JSON.stringify(defaultQualityGate, null, 2)}\n`)
-  await writeMissing(join(repoRoot, ".better-code", "brain", "profile.md"), "# Project Profile\n\n")
-  await writeMissing(join(repoRoot, ".better-code", "brain", "commands.md"), "# Commands\n\n")
-  await writeMissing(join(repoRoot, ".better-code", "brain", "architecture.md"), "# Architecture\n\n")
-  await writeMissing(join(repoRoot, ".better-code", "brain", "known-errors.md"), "# Known Errors\n\n")
-  await writeMissing(join(repoRoot, ".better-code", "brain", "quality-rules.md"), "# Quality Rules\n\n")
-  await writeMissing(join(repoRoot, ".better-code", "brain", "task-history.jsonl"), "")
+  await mkdir(join(repoRoot, configDir, "brain"), { recursive: true })
+  await writeMissing(join(repoRoot, configDir, "quality-gate.json"), `${JSON.stringify(defaultQualityGate, null, 2)}\n`)
+  await writeMissing(join(repoRoot, configDir, "brain", "profile.md"), "# Project Profile\n\n")
+  await writeMissing(join(repoRoot, configDir, "brain", "commands.md"), "# Commands\n\n")
+  await writeMissing(join(repoRoot, configDir, "brain", "architecture.md"), "# Architecture\n\n")
+  await writeMissing(join(repoRoot, configDir, "brain", "known-errors.md"), "# Known Errors\n\n")
+  await writeMissing(join(repoRoot, configDir, "brain", "quality-rules.md"), "# Quality Rules\n\n")
+  await writeMissing(join(repoRoot, configDir, "brain", "task-history.jsonl"), "")
 
-  console.log("Better Code initialized.")
-  console.log("Created .better-code/quality-gate.json")
-  console.log("Created .better-code/brain/")
+  console.log("BetterCode initialized.")
+  console.log(`Created ${configDir}/quality-gate.json`)
+  console.log(`Created ${configDir}/brain/`)
 }
 
 async function writeMissing(file: string, content: string) {

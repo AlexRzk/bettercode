@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@better-code/project-brain",
+  "name": "@bettercode/project-brain",
   "type": "module",
   "license": "MIT",
   "private": true,
@@ -13,7 +13,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@better-code/quality-gate": "workspace:*"
+    "@bettercode/quality-gate": "workspace:*"
   },
   "devDependencies": {
     "@tsconfig/bun": "catalog:",

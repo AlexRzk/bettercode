@@ -1,16 +1,16 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@opencode-ai/cli",
+  "name": "@bettercode/cli",
   "version": "1.17.9",
   "type": "module",
   "license": "MIT",
   "bin": {
-    "better-code": "./bin/better-code.cjs",
+    "bettercode": "./bin/bettercode.cjs",
     "lildax": "./bin/lildax.cjs"
   },
   "files": [
     "bin",
-    "src/better-code.ts"
+    "src/bettercode.ts"
   ],
   "scripts": {
     "build": "bun run script/build.ts",
@@ -21,9 +21,9 @@
   "dependencies": {
     "@effect/platform-node": "catalog:",
     "@opencode-ai/core": "workspace:*",
-    "@better-code/quality-gate": "workspace:*",
-    "@better-code/project-brain": "workspace:*",
-    "@better-code/diff-risk": "workspace:*",
+    "@bettercode/quality-gate": "workspace:*",
+    "@bettercode/project-brain": "workspace:*",
+    "@bettercode/diff-risk": "workspace:*",
     "@opencode-ai/sdk": "workspace:*",
     "@opencode-ai/server": "workspace:*",
     "@opencode-ai/tui": "workspace:*",

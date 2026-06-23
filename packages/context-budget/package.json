@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@better-code/context-budget",
+  "name": "@bettercode/context-budget",
   "type": "module",
   "license": "MIT",
   "private": true,

@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from "node:fs"
 import { mkdir, readFile, writeFile, appendFile } from "node:fs/promises"
 import { join } from "node:path"
-import { detectProject, detectPackageManager, detectAvailableCommands } from "@better-code/quality-gate"
+import { detectProject, detectPackageManager, detectAvailableCommands } from "@bettercode/quality-gate"
 
-const brainDir = ".better-code/brain"
+const brainDir = ".bettercode/brain"
 
 const brainFiles = [
   { name: "profile.md", content: "# Project Profile\n\n" },
@@ -29,8 +29,8 @@ export async function brainInit(rootPath: string): Promise<string[]> {
   return created
 }
 
-const startMarker = "<!-- better-code:generated-profile:start -->"
-const endMarker = "<!-- better-code:generated-profile:end -->"
+const startMarker = "<!-- bettercode:generated-profile:start -->"
+const endMarker = "<!-- bettercode:generated-profile:end -->"
 
 function isLegacyGeneratedProfile(content: string): boolean {
   if (content.includes(startMarker) || content.includes(endMarker)) return false
@@ -123,7 +123,7 @@ export async function brainUpdate(rootPath: string): Promise<{ profileUpdated: b
     }
   }
 
-  const configPath = join(rootPath, ".better-code", "quality-gate.json")
+  const configPath = join(rootPath, ".bettercode", "quality-gate.json")
   if (existsSync(configPath)) {
     try {
       const config = JSON.parse(readFileSync(configPath, "utf8"))
@@ -162,7 +162,7 @@ export async function brainUpdate(rootPath: string): Promise<{ profileUpdated: b
   }
 
   let historyAppended = false
-  const gateResultPath = join(rootPath, ".better-code", "last-gate-result.json")
+  const gateResultPath = join(rootPath, ".bettercode", "last-gate-result.json")
   if (existsSync(gateResultPath)) {
     try {
       const result = JSON.parse(readFileSync(gateResultPath, "utf8"))

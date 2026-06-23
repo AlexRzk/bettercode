@@ -85,9 +85,9 @@
       },
     },
     "packages/benchmark": {
-      "name": "@better-code/benchmark",
+      "name": "@bettercode/benchmark",
       "dependencies": {
-        "@better-code/shared": "workspace:*",
+        "@bettercode/shared": "workspace:*",
       },
       "devDependencies": {
         "@tsconfig/bun": "catalog:",
@@ -96,14 +96,16 @@
       },
     },
     "packages/cli": {
-      "name": "@opencode-ai/cli",
+      "name": "@bettercode/cli",
       "version": "1.17.9",
       "bin": {
-        "better-code": "./bin/better-code.cjs",
+        "bettercode": "./bin/bettercode.cjs",
         "lildax": "./bin/lildax.cjs",
       },
       "dependencies": {
-        "@better-code/quality-gate": "workspace:*",
+        "@bettercode/diff-risk": "workspace:*",
+        "@bettercode/project-brain": "workspace:*",
+        "@bettercode/quality-gate": "workspace:*",
         "@effect/platform-node": "catalog:",
         "@opencode-ai/core": "workspace:*",
         "@opencode-ai/sdk": "workspace:*",
@@ -252,7 +254,7 @@
       },
     },
     "packages/context-budget": {
-      "name": "@better-code/context-budget",
+      "name": "@bettercode/context-budget",
       "devDependencies": {
         "@tsconfig/bun": "catalog:",
         "@types/bun": "catalog:",
@@ -406,9 +408,9 @@
       },
     },
     "packages/diff-risk": {
-      "name": "@better-code/diff-risk",
+      "name": "@bettercode/diff-risk",
       "dependencies": {
-        "@better-code/shared": "workspace:*",
+        "@bettercode/shared": "workspace:*",
       },
       "devDependencies": {
         "@tsconfig/bun": "catalog:",
@@ -684,7 +686,10 @@
       ],
     },
     "packages/project-brain": {
-      "name": "@better-code/project-brain",
+      "name": "@bettercode/project-brain",
+      "dependencies": {
+        "@bettercode/quality-gate": "workspace:*",
+      },
       "devDependencies": {
         "@tsconfig/bun": "catalog:",
         "@types/bun": "catalog:",
@@ -692,10 +697,10 @@
       },
     },
     "packages/quality-gate": {
-      "name": "@better-code/quality-gate",
+      "name": "@bettercode/quality-gate",
       "dependencies": {
-        "@better-code/diff-risk": "workspace:*",
-        "@better-code/shared": "workspace:*",
+        "@bettercode/diff-risk": "workspace:*",
+        "@bettercode/shared": "workspace:*",
       },
       "devDependencies": {
         "@tsconfig/bun": "catalog:",
@@ -743,7 +748,7 @@
       },
     },
     "packages/shared": {
-      "name": "@better-code/shared",
+      "name": "@bettercode/shared",
       "devDependencies": {
         "@tsconfig/bun": "catalog:",
         "@types/bun": "catalog:",
@@ -1350,17 +1355,19 @@
 
     "@bcoe/v8-coverage": ["@bcoe/v8-coverage@1.0.2", "", {}, "sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA=="],
 
-    "@better-code/benchmark": ["@better-code/benchmark@workspace:packages/benchmark"],
+    "@bettercode/benchmark": ["@bettercode/benchmark@workspace:packages/benchmark"],
 
-    "@better-code/context-budget": ["@better-code/context-budget@workspace:packages/context-budget"],
+    "@bettercode/cli": ["@bettercode/cli@workspace:packages/cli"],
 
-    "@better-code/diff-risk": ["@better-code/diff-risk@workspace:packages/diff-risk"],
+    "@bettercode/context-budget": ["@bettercode/context-budget@workspace:packages/context-budget"],
 
-    "@better-code/project-brain": ["@better-code/project-brain@workspace:packages/project-brain"],
+    "@bettercode/diff-risk": ["@bettercode/diff-risk@workspace:packages/diff-risk"],
 
-    "@better-code/quality-gate": ["@better-code/quality-gate@workspace:packages/quality-gate"],
+    "@bettercode/project-brain": ["@bettercode/project-brain@workspace:packages/project-brain"],
 
-    "@better-code/shared": ["@better-code/shared@workspace:packages/shared"],
+    "@bettercode/quality-gate": ["@bettercode/quality-gate@workspace:packages/quality-gate"],
+
+    "@bettercode/shared": ["@bettercode/shared@workspace:packages/shared"],
 
     "@bufbuild/protobuf": ["@bufbuild/protobuf@2.12.0", "", {}, "sha512-B/XlCaFIP8LOwzo+bz5uFzATYokcwCKQcghqnlfwSmM5eX/qTkvDBnDPs+gXtX/RyjxJ4DRikECcPJbyALA8FA=="],
 
@@ -1843,8 +1850,6 @@
     "@openauthjs/openauth": ["@openauthjs/openauth@0.0.0-20250322224806", "", { "dependencies": { "@standard-schema/spec": "1.0.0-beta.3", "aws4fetch": "1.0.20", "jose": "5.9.6" }, "peerDependencies": { "arctic": "^2.2.2", "hono": "^4.0.0" } }, "sha512-p5IWSRXvABcwocH2dNI0w8c1QJelIOFulwhKk+aLLFfUbs8u1pr7kQbYe8yCSM2+bcLHiwbogpUQc2ovrGwCuw=="],
 
     "@opencode-ai/app": ["@opencode-ai/app@workspace:packages/app"],
-
-    "@opencode-ai/cli": ["@opencode-ai/cli@workspace:packages/cli"],
 
     "@opencode-ai/console-app": ["@opencode-ai/console-app@workspace:packages/console/app"],
 

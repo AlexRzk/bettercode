@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@better-code/benchmark",
+  "name": "@bettercode/benchmark",
   "type": "module",
   "license": "MIT",
   "private": true,
@@ -12,7 +12,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@better-code/shared": "workspace:*"
+    "@bettercode/shared": "workspace:*"
   },
   "devDependencies": {
     "@tsconfig/bun": "catalog:",

@@ -7,9 +7,9 @@ const fixtureDir = join(import.meta.dir, "fixtures", "config")
 
 function createFixture(name: string, content?: string) {
   const dir = join(fixtureDir, name)
-  mkdirSync(join(dir, ".better-code"), { recursive: true })
+  mkdirSync(join(dir, ".bettercode"), { recursive: true })
   if (content !== undefined) {
-    writeFileSync(join(dir, ".better-code", "quality-gate.json"), content)
+    writeFileSync(join(dir, ".bettercode", "quality-gate.json"), content)
   }
   return dir
 }

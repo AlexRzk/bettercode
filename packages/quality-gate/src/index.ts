@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
-import { analyzeDiffRisk, analyzeGitDiff } from "@better-code/diff-risk"
+import { analyzeDiffRisk, analyzeGitDiff } from "@bettercode/diff-risk"
 import type {
   AvailableCommands,
   PackageManager,
@@ -14,7 +14,7 @@ import type {
   QualityGateResult,
   QualityGateThresholds,
   RiskLevel,
-} from "@better-code/shared"
+} from "@bettercode/shared"
 
 type ProjectSignal = {
   type: ProjectType
@@ -57,14 +57,14 @@ const failedCheckPenalty: Partial<Record<ProjectCommandName, number>> = {
 }
 
 export function loadProjectConfig(rootPath: string): QualityGateConfig {
-  const configPath = join(rootPath, ".better-code", "quality-gate.json")
+  const configPath = join(rootPath, ".bettercode", "quality-gate.json")
   if (!existsSync(configPath)) return {}
 
   let raw: unknown
   try {
     raw = JSON.parse(readFileSync(configPath, "utf8"))
   } catch {
-    console.warn(`[better-code] Could not parse ${configPath}, using defaults.`)
+    console.warn(`[bettercode] Could not parse ${configPath}, using defaults.`)
     return {}
   }
 
@@ -73,7 +73,7 @@ export function loadProjectConfig(rootPath: string): QualityGateConfig {
 
 function validateConfig(raw: unknown): QualityGateConfig {
   if (typeof raw !== "object" || raw === null) {
-    console.warn("[better-code] Config is not an object, using defaults.")
+    console.warn("[bettercode] Config is not an object, using defaults.")
     return {}
   }
 

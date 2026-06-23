@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@better-code/shared",
+  "name": "@bettercode/shared",
   "type": "module",
   "license": "MIT",
   "private": true,

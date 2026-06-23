@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@better-code/quality-gate",
+  "name": "@bettercode/quality-gate",
   "type": "module",
   "license": "MIT",
   "private": true,
@@ -13,8 +13,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@better-code/diff-risk": "workspace:*",
-    "@better-code/shared": "workspace:*"
+    "@bettercode/diff-risk": "workspace:*",
+    "@bettercode/shared": "workspace:*"
   },
   "devDependencies": {
     "@tsconfig/bun": "catalog:",

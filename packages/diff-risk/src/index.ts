@@ -1,4 +1,4 @@
-import type { DiffRiskResult, GitDiffSummary, RiskLevel } from "@better-code/shared"
+import type { DiffRiskResult, GitDiffSummary, RiskLevel } from "@bettercode/shared"
 
 type RiskRule = {
   pattern: RegExp

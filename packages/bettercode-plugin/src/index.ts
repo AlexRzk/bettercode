@@ -1,4 +1,4 @@
-import type { PluginModule, PluginInput, Hooks } from "@opencode-ai/plugin"
+import type { PluginModule, PluginInput, PluginOptions, Hooks } from "@opencode-ai/plugin"
 import { tool } from "@opencode-ai/plugin"
 import { brainSearch } from "@bettercode/project-brain"
 import { runQualityGate } from "@bettercode/quality-gate"
@@ -6,10 +6,21 @@ import { compressLogs, compressDiff, limitTextByBudget, selectRelevantBrainSecti
 import { readFileSync, existsSync } from "node:fs"
 import { join } from "node:path"
 
-async function server(input: PluginInput, options?: Record<string, unknown>): Promise<Hooks> {
+const DEFAULT_BRAIN_SECTIONS = [
+  "stack", "package manager", "commands", "critical", "paths",
+  "architecture", "framework", "language", "build", "test",
+]
+
+type BrainOptions = {
+  autoInject?: boolean
+  maxTokens?: number
+  sections?: string[]
+}
+
+async function server(input: PluginInput, options?: PluginOptions): Promise<Hooks> {
   const root = input.directory
 
-  const brainOpts = (options?.brain as { autoInject?: boolean; maxTokens?: number }) ?? {}
+  const brainOpts = (options?.brain as BrainOptions | undefined) ?? {}
   const maxBrainTokens = brainOpts.maxTokens ?? 2000
 
   return {
@@ -22,7 +33,8 @@ async function server(input: PluginInput, options?: Record<string, unknown>): Pr
       const brainText = readFileSync(brainPath, "utf8")
       if (!brainText.trim()) return
 
-      const sections = selectRelevantBrainSections("project stack architecture", brainText, maxBrainTokens)
+      const sectionQuery = (brainOpts.sections ?? DEFAULT_BRAIN_SECTIONS).join(" ")
+      const sections = selectRelevantBrainSections(sectionQuery, brainText, maxBrainTokens)
       if (sections) output.system.push(sections)
     },
 
@@ -93,10 +105,6 @@ async function server(input: PluginInput, options?: Record<string, unknown>): Pr
           }
         },
       }),
-    },
-
-    "chat.message": async (_input, _output) => {
-      // TODO: append to task-history.jsonl when global memory is implemented
     },
   }
 }

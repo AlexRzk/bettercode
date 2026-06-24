@@ -3,6 +3,7 @@
 import { mkdir as mkdirAsync, stat } from "node:fs/promises"
 import { readFileSync, existsSync, writeFileSync, mkdirSync, readdirSync, copyFileSync } from "node:fs"
 import { dirname, join, parse } from "node:path"
+import { createInterface } from "node:readline"
 import { runQualityGate } from "@bettercode/quality-gate"
 import { brainInit, brainUpdate, brainSearch } from "@bettercode/project-brain"
 import { generateSpec } from "./spec"
@@ -105,23 +106,16 @@ function askYesNo(question: string, defaultYes: boolean): Promise<boolean> {
       resolve(defaultYes)
       return
     }
+    const rl = createInterface({ input: process.stdin, output: process.stdout })
     const prompt = defaultYes ? "[Y/n]" : "[y/N]"
-    process.stdout.write(`? ${question} ${prompt} `)
-    const onData = (data: Buffer) => {
-      process.stdin.removeListener("error", onError)
-      process.stdin.pause()
-      const answer = data.toString().trim().toLowerCase()
-      if (answer === "") resolve(defaultYes)
-      else if (answer === "y" || answer === "yes") resolve(true)
-      else if (answer === "n" || answer === "no") resolve(false)
+    rl.question(`? ${question} ${prompt} `, (answer) => {
+      rl.close()
+      const trimmed = answer.trim().toLowerCase()
+      if (trimmed === "") resolve(defaultYes)
+      else if (trimmed === "y" || trimmed === "yes") resolve(true)
+      else if (trimmed === "n" || trimmed === "no") resolve(false)
       else resolve(defaultYes)
-    }
-    const onError = () => {
-      process.stdin.removeListener("data", onData)
-      resolve(defaultYes)
-    }
-    process.stdin.once("data", onData)
-    process.stdin.once("error", onError)
+    })
   })
 }
 
@@ -171,11 +165,13 @@ async function cmdSetup() {
   const doPlugin = flags.noPlugin ? false : (isInteractive ? await askYesNo("Register BetterCode plugin with OpenCode?", true) : true)
   const doOptions = flags.noOptions ? false : (isInteractive ? await askYesNo("Configure plugin options?", true) : true)
 
+  // Always create quality-gate.json (it's cheap and always useful)
+  console.log("Creating .bettercode/quality-gate.json...")
+  await initQualityGateConfig(root)
+
   if (doBrain) {
-    console.log("Creating .bettercode/quality-gate.json...")
-    await initBetterCode(root)
     console.log("Creating .bettercode/brain/...")
-    await brainInit(root)
+    await initBrainFiles(root)
     console.log("Updating brain with project info...")
     await brainUpdate(root)
   }
@@ -496,15 +492,24 @@ function findOpencodeCliEntry(start: string): string | undefined {
   }
 }
 
-async function initBetterCode(repoRoot: string) {
-  await mkdirAsync(join(repoRoot, configDir, "brain"), { recursive: true })
+async function initQualityGateConfig(repoRoot: string) {
+  await mkdirAsync(join(repoRoot, configDir), { recursive: true })
   await writeMissing(join(repoRoot, configDir, "quality-gate.json"), `${JSON.stringify(defaultQualityGate, null, 2)}\n`)
+}
+
+async function initBrainFiles(repoRoot: string) {
+  await mkdirAsync(join(repoRoot, configDir, "brain"), { recursive: true })
   await writeMissing(join(repoRoot, configDir, "brain", "profile.md"), "# Project Profile\n\n")
   await writeMissing(join(repoRoot, configDir, "brain", "commands.md"), "# Commands\n\n")
   await writeMissing(join(repoRoot, configDir, "brain", "architecture.md"), "# Architecture\n\n")
   await writeMissing(join(repoRoot, configDir, "brain", "known-errors.md"), "# Known Errors\n\n")
   await writeMissing(join(repoRoot, configDir, "brain", "quality-rules.md"), "# Quality Rules\n\n")
   await writeMissing(join(repoRoot, configDir, "brain", "task-history.jsonl"), "")
+}
+
+async function initBetterCode(repoRoot: string) {
+  await initQualityGateConfig(repoRoot)
+  await initBrainFiles(repoRoot)
 }
 
 async function writeMissing(file: string, content: string) {

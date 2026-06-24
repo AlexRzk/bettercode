@@ -70,12 +70,12 @@ describe("bettercode setup --no-input", () => {
 })
 
 describe("bettercode setup --no-brain", () => {
-  it("skips brain init", () => {
+  it("skips brain init but still creates quality-gate.json", () => {
     fixtureDir = makeFixture("setup-no-brain")
     runCli(["--no-input", "--no-brain", "setup"], fixtureDir)
 
+    expect(existsSync(join(fixtureDir, ".bettercode", "quality-gate.json"))).toBe(true)
     expect(existsSync(join(fixtureDir, ".bettercode", "brain"))).toBe(false)
-    expect(existsSync(join(fixtureDir, ".bettercode", "quality-gate.json"))).toBe(false)
   })
 })
 

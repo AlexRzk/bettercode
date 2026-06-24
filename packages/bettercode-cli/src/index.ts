@@ -171,7 +171,7 @@ async function cmdSetup() {
 
   if (doBrain) {
     console.log("Creating .bettercode/brain/...")
-    await initBrainFiles(root)
+    await brainInit(root)
     console.log("Updating brain with project info...")
     await brainUpdate(root)
   }
@@ -497,19 +497,9 @@ async function initQualityGateConfig(repoRoot: string) {
   await writeMissing(join(repoRoot, configDir, "quality-gate.json"), `${JSON.stringify(defaultQualityGate, null, 2)}\n`)
 }
 
-async function initBrainFiles(repoRoot: string) {
-  await mkdirAsync(join(repoRoot, configDir, "brain"), { recursive: true })
-  await writeMissing(join(repoRoot, configDir, "brain", "profile.md"), "# Project Profile\n\n")
-  await writeMissing(join(repoRoot, configDir, "brain", "commands.md"), "# Commands\n\n")
-  await writeMissing(join(repoRoot, configDir, "brain", "architecture.md"), "# Architecture\n\n")
-  await writeMissing(join(repoRoot, configDir, "brain", "known-errors.md"), "# Known Errors\n\n")
-  await writeMissing(join(repoRoot, configDir, "brain", "quality-rules.md"), "# Quality Rules\n\n")
-  await writeMissing(join(repoRoot, configDir, "brain", "task-history.jsonl"), "")
-}
-
 async function initBetterCode(repoRoot: string) {
   await initQualityGateConfig(repoRoot)
-  await initBrainFiles(repoRoot)
+  await brainInit(repoRoot)
 }
 
 async function writeMissing(file: string, content: string) {

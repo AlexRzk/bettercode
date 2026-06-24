@@ -1,0 +1,27 @@
+{
+  "name": "@bettercode/plugin",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "engines": {
+    "opencode": ">=1.0.0"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "workspace:*",
+    "@bettercode/project-brain": "workspace:*",
+    "@bettercode/quality-gate": "workspace:*",
+    "@bettercode/context-budget": "workspace:*"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "catalog:",
+    "@types/bun": "catalog:",
+    "@typescript/native-preview": "catalog:"
+  },
+  "scripts": {
+    "typecheck": "tsgo --noEmit",
+    "test": "bun test"
+  }
+}

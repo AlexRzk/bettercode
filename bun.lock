@@ -95,6 +95,20 @@
         "@typescript/native-preview": "catalog:",
       },
     },
+    "packages/bettercode-plugin": {
+      "name": "@bettercode/plugin",
+      "dependencies": {
+        "@bettercode/context-budget": "workspace:*",
+        "@bettercode/project-brain": "workspace:*",
+        "@bettercode/quality-gate": "workspace:*",
+        "@opencode-ai/plugin": "workspace:*",
+      },
+      "devDependencies": {
+        "@tsconfig/bun": "catalog:",
+        "@types/bun": "catalog:",
+        "@typescript/native-preview": "catalog:",
+      },
+    },
     "packages/cli": {
       "name": "@bettercode/cli",
       "version": "1.17.9",
@@ -1362,6 +1376,8 @@
     "@bettercode/context-budget": ["@bettercode/context-budget@workspace:packages/context-budget"],
 
     "@bettercode/diff-risk": ["@bettercode/diff-risk@workspace:packages/diff-risk"],
+
+    "@bettercode/plugin": ["@bettercode/plugin@workspace:packages/bettercode-plugin"],
 
     "@bettercode/project-brain": ["@bettercode/project-brain@workspace:packages/project-brain"],
 

@@ -100,14 +100,12 @@
       "version": "0.1.0",
       "bin": {
         "bettercode": "./bin/bettercode.cjs",
-        "lildax": "./bin/lildax.cjs",
       },
       "dependencies": {
         "@bettercode/benchmark": "workspace:*",
         "@bettercode/diff-risk": "workspace:*",
         "@bettercode/project-brain": "workspace:*",
         "@bettercode/quality-gate": "workspace:*",
-        "@bettercode/shared": "workspace:*",
       },
       "devDependencies": {
         "@tsconfig/bun": "catalog:",

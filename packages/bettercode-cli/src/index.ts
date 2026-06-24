@@ -60,7 +60,6 @@ function parseFlags(argv: string[]) {
 }
 
 function resolveRoot(p: string) {
-  if (existsSync(join(p, ".git"))) return p
   return p
 }
 
@@ -140,9 +139,10 @@ async function cmdSync() {
         const existingPlugins = Array.isArray(config.plugin) ? config.plugin : []
 
         // Check if plugin already exists
-        const existingIdx = existingPlugins.findIndex((p: any) => {
-          const spec = Array.isArray(p) ? p[0] : p
-          return typeof spec === "string" && spec.includes("bettercode")
+        const existingIdx = existingPlugins.findIndex((p: unknown) => {
+          if (typeof p === "string") return p.endsWith("/bettercode.ts")
+          if (Array.isArray(p) && typeof p[0] === "string") return p[0].endsWith("/bettercode.ts")
+          return false
         })
 
         if (existingIdx >= 0) {
@@ -269,10 +269,10 @@ async function cmdRun() {
     await cmdSync()
   }
 
-  // Resolve OpenCode CLI entry
-  const cliEntry = join(root, "packages", "opencode", "src", "index.ts")
-  if (!existsSync(cliEntry)) {
-    console.error("OpenCode CLI entry not found at packages/opencode/src/index.ts")
+  // Resolve OpenCode CLI entry by walking up directory tree
+  const cliEntry = findOpencodeCliEntry(root)
+  if (!cliEntry) {
+    console.error(`OpenCode CLI entry not found. Searched for packages/opencode/src/index.ts up from ${root}`)
     process.exit(1)
   }
 
@@ -380,6 +380,17 @@ async function cmdReport() {
 }
 
 // ── Helpers ──
+
+function findOpencodeCliEntry(start: string): string | undefined {
+  let current = start
+  for (;;) {
+    const candidate = join(current, "packages", "opencode", "src", "index.ts")
+    if (existsSync(candidate)) return candidate
+    const parent = dirname(current)
+    if (parent === current) return undefined
+    current = parent
+  }
+}
 
 async function initBetterCode(repoRoot: string) {
   await mkdirAsync(join(repoRoot, configDir, "brain"), { recursive: true })

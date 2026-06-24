@@ -5,8 +5,7 @@
   "license": "MIT",
   "private": true,
   "bin": {
-    "bettercode": "./bin/bettercode.cjs",
-    "lildax": "./bin/lildax.cjs"
+    "bettercode": "./bin/bettercode.cjs"
   },
   "exports": {
     ".": "./src/index.ts"
@@ -15,8 +14,7 @@
     "@bettercode/project-brain": "workspace:*",
     "@bettercode/quality-gate": "workspace:*",
     "@bettercode/diff-risk": "workspace:*",
-    "@bettercode/benchmark": "workspace:*",
-    "@bettercode/shared": "workspace:*"
+    "@bettercode/benchmark": "workspace:*"
   },
   "devDependencies": {
     "@tsconfig/bun": "catalog:",

@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, beforeAll } from "bun:test"
+import { describe, it, expect, afterEach } from "bun:test"
 import { mkdtempSync, rmSync, existsSync, readFileSync, mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
@@ -176,5 +176,110 @@ describe("bettercode doctor", () => {
     expect(parsed.length).toBeGreaterThan(0)
     expect(parsed[0]).toHaveProperty("name")
     expect(parsed[0]).toHaveProperty("status")
+  })
+})
+
+describe("bettercode sync with pluginOptions", () => {
+  it("writes plugin options to .opencode/opencode.jsonc", () => {
+    fixtureDir = makeFixture("sync-options")
+    mkdirSync(join(fixtureDir, ".opencode"), { recursive: true })
+    writeFileSync(join(fixtureDir, ".opencode", "opencode.jsonc"), '{}\n')
+    mkdirSync(join(fixtureDir, ".bettercode"), { recursive: true })
+    writeFileSync(join(fixtureDir, ".bettercode", "bettercode.jsonc"), '{"plugin": {"brain": {"autoInject": true}}}\n')
+
+    runCli(["sync"], fixtureDir)
+
+    const config = JSON.parse(readFileSync(join(fixtureDir, ".opencode", "opencode.jsonc"), "utf8"))
+    expect(Array.isArray(config.plugin)).toBe(true)
+    expect(config.plugin.length).toBe(1)
+    const entry = config.plugin[0]
+    expect(entry[0]).toBe("./plugin/bettercode.ts")
+    expect(entry[1]).toEqual({ brain: { autoInject: true } })
+  })
+
+  it("updates existing plugin entry without duplication", () => {
+    fixtureDir = makeFixture("sync-update")
+    mkdirSync(join(fixtureDir, ".opencode"), { recursive: true })
+    writeFileSync(join(fixtureDir, ".opencode", "opencode.jsonc"), '{"plugin": [["./plugin/bettercode.ts", {"brain": {"autoInject": false}}]]}\n')
+    mkdirSync(join(fixtureDir, ".bettercode"), { recursive: true })
+    writeFileSync(join(fixtureDir, ".bettercode", "bettercode.jsonc"), '{"plugin": {"brain": {"autoInject": true, "maxTokens": 3000}}}\n')
+
+    runCli(["sync"], fixtureDir)
+
+    const config = JSON.parse(readFileSync(join(fixtureDir, ".opencode", "opencode.jsonc"), "utf8"))
+    expect(config.plugin.length).toBe(1)
+    expect(config.plugin[0][1]).toEqual({ brain: { autoInject: true, maxTokens: 3000 } })
+  })
+})
+
+describe("bettercode gate run", () => {
+  it("outputs quality gate result in JSON", () => {
+    fixtureDir = makeFixture("gate")
+    const output = runCli(["--json", "gate", "run"], fixtureDir)
+
+    const parsed = JSON.parse(output)
+    expect(parsed).toHaveProperty("status")
+    expect(parsed).toHaveProperty("score")
+    expect(parsed).toHaveProperty("risk")
+    expect(parsed).toHaveProperty("checks")
+  })
+})
+
+describe("bettercode brain", () => {
+  it("brain init creates brain files", () => {
+    fixtureDir = makeFixture("brain-init")
+    const output = runCli(["brain", "init"], fixtureDir)
+
+    expect(output).toContain("Brain initialized")
+    expect(existsSync(join(fixtureDir, ".bettercode", "brain", "profile.md"))).toBe(true)
+    expect(existsSync(join(fixtureDir, ".bettercode", "brain", "architecture.md"))).toBe(true)
+  })
+
+  it("brain search returns no-results for empty brain", () => {
+    fixtureDir = makeFixture("brain-search")
+    const output = runCli(["brain", "search", "nonexistent"], fixtureDir)
+
+    expect(output).toContain("No results")
+  })
+
+  it("brain update updates profile", () => {
+    fixtureDir = makeFixture("brain-update")
+    runCli(["brain", "init"], fixtureDir)
+    const output = runCli(["brain", "update"], fixtureDir)
+
+    expect(output).toContain("Brain updated")
+  })
+})
+
+describe("bettercode benchmark run", () => {
+  it("runs and outputs score", () => {
+    fixtureDir = makeFixture("benchmark")
+    const output = runCli(["--json", "benchmark", "run"], fixtureDir)
+
+    const parsed = JSON.parse(output)
+    expect(parsed).toHaveProperty("score")
+    expect(parsed).toHaveProperty("duration_ms")
+  })
+})
+
+describe("bettercode report", () => {
+  it("generates report", () => {
+    fixtureDir = makeFixture("report")
+    const output = runCli(["--json", "report"], fixtureDir)
+
+    const parsed = JSON.parse(output)
+    expect(parsed).toHaveProperty("gate")
+    expect(parsed).toHaveProperty("brain")
+  })
+})
+
+describe("bettercode run", () => {
+  it("reports missing OpenCode CLI entry", () => {
+    fixtureDir = makeFixture("run-missing")
+    try {
+      runCli(["run", "--", "--help"], fixtureDir)
+    } catch (e: any) {
+      expect(e.stderr).toContain("OpenCode CLI entry not found")
+    }
   })
 })

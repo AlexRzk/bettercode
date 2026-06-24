@@ -55,7 +55,7 @@ export async function generateSpec(root: string, description: string): Promise<S
   }
 
   const likelyFiles = inferLikelyFiles(description, diffSummary)
-  const requiredChecks = riskChecksMap[risk] ?? riskChecksMap.low
+  const requiredChecks = riskChecksMap[risk] ?? riskChecksMap.low ?? []
 
   const risks: string[] = []
   if (risk === "high" || risk === "critical") {

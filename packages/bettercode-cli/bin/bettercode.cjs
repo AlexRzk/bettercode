@@ -3,7 +3,7 @@
 const childProcess = require("child_process")
 const path = require("path")
 
-const child = childProcess.spawn("bun", [path.join(__dirname, "..", "src", "bettercode.ts"), ...process.argv.slice(2)], {
+const child = childProcess.spawn("bun", [path.join(__dirname, "..", "src", "index.ts"), ...process.argv.slice(2)], {
   stdio: "inherit",
 })
 

@@ -1,0 +1,31 @@
+{
+  "name": "@bettercode/cli-wrapper",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "bin": {
+    "bettercode": "./bin/bettercode.cjs",
+    "lildax": "./bin/lildax.cjs"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@bettercode/project-brain": "workspace:*",
+    "@bettercode/quality-gate": "workspace:*",
+    "@bettercode/diff-risk": "workspace:*",
+    "@bettercode/benchmark": "workspace:*",
+    "@bettercode/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "catalog:",
+    "@types/bun": "catalog:",
+    "@typescript/native-preview": "catalog:"
+  },
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "test": "bun test",
+    "typecheck": "tsgo --noEmit"
+  }
+}

@@ -156,3 +156,29 @@ const table = sqliteTable("session", {
 - Keep delivery vocabulary explicit. Prompts steer by default and promote at the next safe provider-turn boundary while the current drain requires continuation. An explicit `queue` input remains pending until the Session would otherwise become idle; promote one queued input at that boundary, then reevaluate continuation before promoting another. Promoting any new user input resets the selected agent's provider-turn allowance; a batch of steers resets it once.
 - Keep EventV2 replay owner claims separate from clustered Session execution ownership.
 - Keep the System Context algebra, registry, and built-ins in `src/system-context`; keep Context Source producers with their observed domains, and keep Session History selection plus Context Epoch persistence Session-owned.
+
+## BetterCode Package Layout
+
+BetterCode is a wrapper + plugin layer above OpenCode, not a fork.
+
+### Package structure
+
+- `packages/opencode/` — OpenCode engine (upstream, do not modify for BetterCode features)
+- `packages/cli/` — OpenCode CLI (`@opencode-ai/cli`, upstream-pure, no BetterCode deps)
+- `packages/plugin/` — OpenCode plugin SDK (`@opencode-ai/plugin`, upstream)
+- `packages/bettercode-plugin/` — BetterCode plugin (`@bettercode/plugin`, wires into OpenCode via `Hooks`)
+- `packages/bettercode-cli/` — BetterCode wrapper CLI (`@bettercode/cli-wrapper`, user-facing `bettercode` command)
+- `packages/project-brain/`, `packages/quality-gate/`, `packages/context-budget/`, `packages/diff-risk/`, `packages/benchmark/`, `packages/shared/` — autonomous packages (no OpenCode coupling)
+
+### Rules
+
+- Autonomous packages must never import from `packages/opencode/src/` or `@opencode-ai/opencode`.
+- Only `packages/bettercode-plugin` may import from `@opencode-ai/plugin` (for hook types and `tool()` helper).
+- `packages/bettercode-cli` delegates to OpenCode via process spawn, not import.
+- `bettercode run` must pass `--conditions=browser` to the OpenCode CLI.
+- Tests run from package directories, never from repo root.
+- Run `bun typecheck` (not `tsc`) from package directories.
+
+### Upstream sync
+
+See `docs/upstream-update.md` for the procedure. Key: only `packages/bettercode-plugin` may need adaptation when hook signatures change.

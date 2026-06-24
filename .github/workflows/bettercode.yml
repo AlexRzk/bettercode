@@ -1,0 +1,58 @@
+name: bettercode
+
+on: [push, pull_request]
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install
+      - name: Typecheck autonomous packages
+        run: |
+          cd packages/shared && bun typecheck
+          cd packages/diff-risk && bun typecheck
+          cd packages/quality-gate && bun typecheck
+          cd packages/project-brain && bun typecheck
+          cd packages/context-budget && bun typecheck
+          cd packages/benchmark && bun typecheck
+      - name: Typecheck bettercode plugin and cli
+        run: |
+          cd packages/bettercode-plugin && bun typecheck
+          cd packages/bettercode-cli && bun typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install
+      - name: Test autonomous packages
+        run: |
+          cd packages/diff-risk && bun test
+          cd packages/quality-gate && bun test
+          cd packages/project-brain && bun test
+          cd packages/context-budget && bun test
+      - name: Test bettercode plugin
+        run: cd packages/bettercode-plugin && bun test
+      - name: Test bettercode cli
+        run: cd packages/bettercode-cli && bun test
+
+  forbidden-imports:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check no OpenCode imports in autonomous packages
+        run: |
+          for dir in packages/project-brain packages/quality-gate packages/context-budget packages/diff-risk packages/benchmark packages/shared; do
+            if grep -r "packages/opencode/src\|@opencode-ai/opencode" "$dir/src" 2>/dev/null; then
+              echo "ERROR: Forbidden OpenCode imports found in $dir"
+              exit 1
+            fi
+          done
+          echo "OK: No forbidden imports"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { mkdir as mkdirAsync, stat } from "node:fs/promises"
-import { readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs"
+import { readFileSync, existsSync, writeFileSync, mkdirSync, readdirSync, copyFileSync } from "node:fs"
 import { dirname, join, parse } from "node:path"
 import { runQualityGate } from "@bettercode/quality-gate"
 import { brainInit, brainUpdate, brainSearch } from "@bettercode/project-brain"
@@ -23,12 +23,12 @@ export * from "@bettercode/plugin"
 `
 
 const flags = parseFlags(process.argv.slice(2))
-const root = flags.root ? resolveRoot(flags.root) : await findRepoRoot(process.cwd())
+const root = flags.root ?? await findRepoRoot(process.cwd())
 migrateLegacyConfig(root)
 
 const command = flags.positional
 
-if (!command) { printHelp(); process.exit(0) }
+if (command.length === 0) { printHelp(); process.exit(0) }
 
 if (command[0] === "init") { await cmdInit(); process.exit(0) }
 if (command[0] === "sync") { await cmdSync(); process.exit(0) }
@@ -57,10 +57,6 @@ function parseFlags(argv: string[]) {
     positional.push(argv[i]!); i++
   }
   return { json: !!parsed.json, root: typeof parsed.root === "string" ? parsed.root : undefined, positional }
-}
-
-function resolveRoot(p: string) {
-  return p
 }
 
 function jsonOutput(data: unknown) {
@@ -113,6 +109,7 @@ async function cmdSync() {
   if (existsSync(bcConfigPath)) {
     try {
       const raw = readFileSync(bcConfigPath, "utf8")
+      // TODO: use state-machine parser if URL/string values with // are added
       const cleaned = raw.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "")
       const config = JSON.parse(cleaned)
       pluginOptions = config.plugin
@@ -132,6 +129,7 @@ async function cmdSync() {
     if (existsSync(opencodeConfig)) {
       try {
         const raw = readFileSync(opencodeConfig, "utf8")
+        // TODO: use state-machine parser if URL/string values with // are added
         const cleaned = raw.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "")
         const config = JSON.parse(cleaned)
 
@@ -199,6 +197,7 @@ async function cmdDoctor() {
   if (existsSync(bcConfigPath)) {
     try {
       const raw = readFileSync(bcConfigPath, "utf8")
+      // TODO: use state-machine parser if URL/string values with // are added
       const cleaned = raw.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "")
       JSON.parse(cleaned)
       checks.push({ name: "BetterCode config", status: "ok", detail: ".bettercode/bettercode.jsonc valid" })
@@ -227,6 +226,7 @@ async function cmdDoctor() {
   if (existsSync(opencodeConfig)) {
     try {
       const raw = readFileSync(opencodeConfig, "utf8")
+      // TODO: use state-machine parser if URL/string values with // are added
       const cleaned = raw.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "")
       JSON.parse(cleaned)
       checks.push({ name: "OpenCode config", status: "ok", detail: ".opencode/opencode.jsonc valid" })
@@ -467,7 +467,6 @@ function migrateLegacyConfig(repoRoot: string) {
   if (!legacyStat?.isDirectory()) return
 
   try {
-    const { readdirSync, copyFileSync, mkdirSync } = require("node:fs")
     mkdirSync(newDir, { recursive: true })
     mkdirSync(join(newDir, "brain"), { recursive: true })
 

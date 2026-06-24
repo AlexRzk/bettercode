@@ -63,8 +63,8 @@ describe("E2E: fresh project workflow", () => {
     const brainUpdate = runCli(["brain", "update"], fixtureDir)
     expect(brainUpdate).toContain("Brain updated")
 
-    const brainSearch = runCliSafe(["brain", "search", "test"], fixtureDir)
-    expect(brainSearch).toContain("result")
+    const brainSearch = runCliSafe(["brain", "search", "stack"], fixtureDir)
+    expect(brainSearch).toMatch(/\d+ result\(s\) for/)
   })
 
   it("gate run produces valid JSON output", () => {

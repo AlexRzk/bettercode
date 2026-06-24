@@ -188,6 +188,7 @@ export function brainSearch(rootPath: string, query: string): SearchResult[] {
 
   const results: SearchResult[] = []
   const terms = query.toLowerCase().split(/\s+/).filter(Boolean)
+  if (terms.length === 0) return []
 
   for (const file of brainFiles) {
     if (file.name.endsWith(".jsonl")) continue

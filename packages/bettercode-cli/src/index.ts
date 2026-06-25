@@ -376,9 +376,10 @@ async function cmdRun() {
     process.exit(1)
   }
 
-  // Spawn OpenCode with --conditions=browser
+  // Spawn OpenCode with --conditions=browser and --cwd to load bunfig.toml preload
+  const opencodeDir = join(root, "packages", "opencode")
   const { spawnSync } = await import("node:child_process")
-  const result = spawnSync("bun", ["run", "--conditions=browser", cliEntry, ...runArgs], {
+  const result = spawnSync("bun", ["run", "--cwd", opencodeDir, "--conditions=browser", "src/index.ts", ...runArgs], {
     stdio: "inherit",
     cwd: root,
   })

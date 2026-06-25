@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
+import { spawnSync } from "node:child_process"
 import { analyzeDiffRisk, analyzeGitDiff } from "@bettercode/diff-risk"
 import type {
   AvailableCommands,
@@ -291,20 +292,17 @@ function resolveCommands(
 async function runShellCommand(rootPath: string, command: string) {
   const started = performance.now()
   try {
-    const child = Bun.spawn(shellCommandArgs(command), {
+    const args = shellCommandArgs(command)
+    const result = spawnSync(args[0]!, args.slice(1), {
       cwd: rootPath,
-      stdout: "pipe",
-      stderr: "pipe",
+      encoding: "utf8",
+      timeout: 120_000,
     })
-    const [stdout, stderr, exitCode] = await Promise.all([
-      new Response(child.stdout).text(),
-      new Response(child.stderr).text(),
-      child.exited,
-    ])
 
+    const output = trimOutput(`${result.stdout ?? ""}${result.stderr ? `\n${result.stderr}` : ""}`)
     return {
-      exitCode,
-      output: trimOutput(`${stdout}${stderr ? `\n${stderr}` : ""}`),
+      exitCode: result.status ?? 1,
+      output,
       durationMs: Math.round(performance.now() - started),
     }
   } catch (error) {

@@ -1,20 +1,35 @@
 {
-  "name": "@bettercode/cli-wrapper",
-  "version": "0.1.0",
+  "name": "bettercode",
+  "version": "1.0.0",
   "type": "module",
   "license": "MIT",
-  "private": true,
   "bin": {
     "bettercode": "./bin/bettercode.cjs"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./dist/cli.js",
+    "./plugin": "./dist/plugin.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "peerDependencies": {
+    "@opencode-ai/cli": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@opencode-ai/cli": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@bettercode/project-brain": "workspace:*",
     "@bettercode/quality-gate": "workspace:*",
-    "@bettercode/diff-risk": "workspace:*",
-    "@bettercode/benchmark": "workspace:*"
+    "@bettercode/diff-risk": "workspace:*"
   },
   "devDependencies": {
     "@tsconfig/bun": "catalog:",
@@ -22,8 +37,10 @@
     "@typescript/native-preview": "catalog:"
   },
   "scripts": {
+    "build": "bun run script/build.ts",
     "dev": "bun run src/index.ts",
     "test": "bun test",
-    "typecheck": "tsgo --noEmit"
+    "typecheck": "tsgo --noEmit",
+    "prepublishOnly": "bun run build"
   }
 }

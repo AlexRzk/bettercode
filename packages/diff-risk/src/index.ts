@@ -1,4 +1,5 @@
 import type { DiffRiskResult, GitDiffSummary, RiskLevel } from "@bettercode/shared"
+import { spawnSync } from "node:child_process"
 
 type RiskRule = {
   pattern: RegExp
@@ -127,17 +128,16 @@ function parseGitLineCount(value: string | undefined) {
 
 async function runGit(rootPath: string, args: string[]) {
   try {
-    const child = Bun.spawn(["git", ...args], {
+    const result = spawnSync("git", args, {
       cwd: rootPath,
-      stdout: "pipe",
-      stderr: "pipe",
+      encoding: "utf8",
+      timeout: 30_000,
     })
-    const [stdout, stderr, exitCode] = await Promise.all([
-      new Response(child.stdout).text(),
-      new Response(child.stderr).text(),
-      child.exited,
-    ])
-    return { stdout, stderr, exitCode }
+    return {
+      stdout: result.stdout ?? "",
+      stderr: result.stderr ?? "",
+      exitCode: result.status ?? 1,
+    }
   } catch (error) {
     return {
       stdout: "",

@@ -37,7 +37,7 @@ describe("bettercode setup --no-input", () => {
     expect(existsSync(join(fixtureDir, ".bettercode", "quality-gate.json"))).toBe(true)
     expect(existsSync(join(fixtureDir, ".bettercode", "brain", "profile.md"))).toBe(true)
     expect(existsSync(join(fixtureDir, ".bettercode", "bettercode.jsonc"))).toBe(true)
-    expect(existsSync(join(fixtureDir, ".opencode", "plugin", "bettercode.ts"))).toBe(true)
+    expect(existsSync(join(fixtureDir, ".opencode", "plugin", "bettercode.js"))).toBe(true)
     expect(output).toContain("bettercode setup complete")
   })
 
@@ -84,7 +84,7 @@ describe("bettercode setup --no-plugin", () => {
     fixtureDir = makeFixture("setup-no-plugin")
     runCli(["--no-input", "--no-plugin", "setup"], fixtureDir)
 
-    expect(existsSync(join(fixtureDir, ".opencode", "plugin", "bettercode.ts"))).toBe(false)
+    expect(existsSync(join(fixtureDir, ".opencode", "plugin", "bettercode.js"))).toBe(false)
   })
 })
 
@@ -95,6 +95,6 @@ describe("bettercode setup --no-options", () => {
 
     expect(existsSync(join(fixtureDir, ".bettercode", "bettercode.jsonc"))).toBe(false)
     expect(existsSync(join(fixtureDir, ".bettercode", "quality-gate.json"))).toBe(true)
-    expect(existsSync(join(fixtureDir, ".opencode", "plugin", "bettercode.ts"))).toBe(true)
+    expect(existsSync(join(fixtureDir, ".opencode", "plugin", "bettercode.js"))).toBe(true)
   })
 })

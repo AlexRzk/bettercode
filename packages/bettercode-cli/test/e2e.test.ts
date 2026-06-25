@@ -91,7 +91,7 @@ describe("E2E: sync idempotency", () => {
     runCli(["sync"], fixtureDir)
 
     const content = readFileSync(join(fixtureDir, ".opencode", "plugin", "bettercode.js"), "utf8")
-    expect(content).toContain("default")
+    expect(content).toContain("bettercode_brain_search")
 
     const config = JSON.parse(readFileSync(join(fixtureDir, ".opencode", "opencode.jsonc"), "utf8"))
     expect(config.plugin).toBeUndefined()

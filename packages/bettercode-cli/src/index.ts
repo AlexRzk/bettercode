@@ -57,7 +57,7 @@ function findPluginSource(): string {
   const devPlugin = join(distDir, "..", "..", "bettercode-plugin", "src", "index.ts")
   if (existsSync(devPlugin)) return devPlugin
 
-  return distPlugin // fallback to dist path
+  throw new Error("Plugin source not found. Run 'bun run build' or reinstall bettercode.")
 }
 
 const flags = parseFlags(process.argv.slice(2))

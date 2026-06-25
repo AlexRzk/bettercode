@@ -175,7 +175,7 @@ BetterCode is a wrapper + plugin layer above OpenCode, not a fork.
 - Autonomous packages must never import from `packages/opencode/src/` or `@opencode-ai/opencode`.
 - Only `packages/bettercode-plugin` may import from `@opencode-ai/plugin` (for hook types and `tool()` helper).
 - `packages/bettercode-cli` delegates to OpenCode via process spawn, not import.
-- `bettercode run` must pass `--conditions=browser` to the OpenCode CLI.
+- `bettercode run` spawns `lildax` (the OpenCode CLI binary) or resolves it from node_modules. In dev mode from the monorepo, it falls back to `bun run --cwd packages/opencode --conditions=browser src/index.ts`.
 - Tests run from package directories, never from repo root.
 - Run `bun typecheck` (not `tsc`) from package directories.
 

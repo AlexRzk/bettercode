@@ -74,8 +74,8 @@ describe("bettercode sync", () => {
     expect(existsSync(join(fixtureDir, ".opencode", "plugin", "bettercode.js"))).toBe(true)
 
     const pluginContent = readFileSync(join(fixtureDir, ".opencode", "plugin", "bettercode.js"), "utf8")
-    expect(pluginContent).toContain("default")
-    expect(pluginContent).toContain("server")
+    expect(pluginContent).toContain("bettercode_brain_search")
+    expect(pluginContent).toContain("bettercode_quality_gate")
   })
 
   it("is idempotent", () => {
@@ -87,7 +87,7 @@ describe("bettercode sync", () => {
     runCli(["sync"], fixtureDir)
 
     const content = readFileSync(join(fixtureDir, ".opencode", "plugin", "bettercode.js"), "utf8")
-    expect(content).toContain("default")
+    expect(content).toContain("bettercode_brain_search")
   })
 
   it("preserves existing .opencode/opencode.jsonc fields", () => {

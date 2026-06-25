@@ -119,6 +119,7 @@
         "@bettercode/context-budget": "workspace:*",
         "@bettercode/project-brain": "workspace:*",
         "@bettercode/quality-gate": "workspace:*",
+        "@bettercode/shared": "workspace:*",
         "@opencode-ai/plugin": "workspace:*",
       },
       "devDependencies": {

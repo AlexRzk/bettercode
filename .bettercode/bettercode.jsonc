@@ -1,0 +1,21 @@
+{
+  "plugin": {
+    "brain": {
+      "autoInject": true,
+      "maxTokens": 2000,
+      "sections": [
+        "stack", "package manager", "commands", "critical", "paths",
+        "architecture", "framework", "language", "build", "test"
+      ]
+    },
+    "qualityGate": {
+      "autoRun": false,
+      "failOnError": false
+    },
+    "contextBudget": {
+      "mode": "balanced",
+      "maxLogTokens": 1500,
+      "maxDiffTokens": 4000
+    }
+  }
+}

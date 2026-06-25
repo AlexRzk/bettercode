@@ -13,7 +13,8 @@
     "@opencode-ai/plugin": "workspace:*",
     "@bettercode/project-brain": "workspace:*",
     "@bettercode/quality-gate": "workspace:*",
-    "@bettercode/context-budget": "workspace:*"
+    "@bettercode/context-budget": "workspace:*",
+    "@bettercode/shared": "workspace:*"
   },
   "devDependencies": {
     "@tsconfig/bun": "catalog:",

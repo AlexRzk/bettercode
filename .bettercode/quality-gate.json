@@ -1,0 +1,31 @@
+{
+  "project": {
+    "type": "auto",
+    "packageManager": "auto"
+  },
+  "commands": {
+    "lint": "auto",
+    "typecheck": "auto",
+    "test": "auto",
+    "build": "auto"
+  },
+  "thresholds": {
+    "passScore": 90,
+    "warnScore": 70,
+    "maxChangedFiles": 12,
+    "maxDiffLines": 500
+  },
+  "rules": {
+    "failOnBuildError": true,
+    "failOnTypecheckError": true,
+    "failOnSecrets": true,
+    "warnOnMissingTests": true,
+    "reviewCriticalPath": true
+  },
+  "criticalPaths": [
+    "src/auth/**",
+    "src/middleware.ts",
+    "src/app/api/**",
+    "prisma/migrations/**"
+  ]
+}

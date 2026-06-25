@@ -3,6 +3,7 @@ import { tool } from "@opencode-ai/plugin"
 import { brainSearch } from "@bettercode/project-brain"
 import { runQualityGate } from "@bettercode/quality-gate"
 import { compressLogs, compressDiff, limitTextByBudget, selectRelevantBrainSections } from "@bettercode/context-budget"
+import { findRepoRoot } from "@bettercode/shared"
 import { readFileSync, existsSync } from "node:fs"
 import { join } from "node:path"
 
@@ -18,7 +19,8 @@ type BrainOptions = {
 }
 
 async function server(input: PluginInput, options?: PluginOptions): Promise<Hooks> {
-  const root = input.directory
+  const projectRoot = input.directory
+  const repoRoot = findRepoRoot(input.directory)
 
   const brainOpts = (options?.brain as BrainOptions | undefined) ?? {}
   const maxBrainTokens = brainOpts.maxTokens ?? 2000
@@ -27,7 +29,7 @@ async function server(input: PluginInput, options?: PluginOptions): Promise<Hook
     "experimental.chat.system.transform": async (_hookInput, output) => {
       if (brainOpts.autoInject === false) return
 
-      const brainPath = join(root, ".bettercode", "brain", "profile.md")
+      const brainPath = join(projectRoot, ".bettercode", "brain", "profile.md")
       if (!existsSync(brainPath)) return
 
       const brainText = readFileSync(brainPath, "utf8")
@@ -43,7 +45,7 @@ async function server(input: PluginInput, options?: PluginOptions): Promise<Hook
         description: "Search the BetterCode project brain for context about the codebase",
         args: { query: tool.schema.string().describe("Search query to find in project brain files") },
         async execute(args) {
-          const results = brainSearch(root, args.query)
+          const results = brainSearch(projectRoot, args.query)
           return {
             title: "Brain search",
             output: results.length === 0
@@ -57,7 +59,7 @@ async function server(input: PluginInput, options?: PluginOptions): Promise<Hook
         description: "Run the BetterCode quality gate (lint, typecheck, test, build) and return a score",
         args: {},
         async execute() {
-          const result = await runQualityGate(root)
+          const result = await runQualityGate(repoRoot)
           return {
             title: "Quality gate",
             output: [

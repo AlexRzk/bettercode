@@ -1,3 +1,19 @@
+import { existsSync } from "node:fs"
+import { join, dirname, resolve } from "node:path"
+
+export function findRepoRoot(startPath: string): string {
+  let current = resolve(startPath)
+  while (true) {
+    if (existsSync(join(current, "bun.lock")) || existsSync(join(current, "bun.lockb"))) return current
+    if (existsSync(join(current, "pnpm-lock.yaml"))) return current
+    if (existsSync(join(current, "yarn.lock"))) return current
+    if (existsSync(join(current, "package-lock.json"))) return current
+    const parent = dirname(current)
+    if (parent === current) return startPath
+    current = parent
+  }
+}
+
 export type GateStatus = "PASS" | "WARN" | "FAIL" | "SKIPPED"
 
 export type CheckStatus = "PASS" | "FAIL" | "SKIPPED"

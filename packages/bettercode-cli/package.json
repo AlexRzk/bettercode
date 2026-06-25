@@ -26,11 +26,7 @@
       "optional": true
     }
   },
-  "dependencies": {
-    "@bettercode/project-brain": "workspace:*",
-    "@bettercode/quality-gate": "workspace:*",
-    "@bettercode/diff-risk": "workspace:*"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@tsconfig/bun": "catalog:",
     "@types/bun": "catalog:",

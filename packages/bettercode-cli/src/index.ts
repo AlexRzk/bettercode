@@ -11,6 +11,52 @@ import { runQualityGate } from "@bettercode/quality-gate"
 import { brainInit, brainUpdate, brainSearch } from "@bettercode/project-brain"
 import { generateSpec } from "./spec"
 
+// ── Inline JSONC parser (state-machine, no external deps) ──
+
+function stripJsoncComments(input: string): string {
+  const out: string[] = []
+  let i = 0
+  const len = input.length
+  while (i < len) {
+    const ch = input[i]!
+    if (ch === '"' || ch === "'") {
+      const quote = ch
+      out.push(ch)
+      i++
+      while (i < len) {
+        const c = input[i]!
+        out.push(c)
+        if (c === "\\" && i + 1 < len) { i++; out.push(input[i]!) }
+        else if (c === quote) break
+        i++
+      }
+      i++
+    } else if (ch === "/" && i + 1 < len && input[i + 1] === "/") {
+      while (i < len && input[i] !== "\n") i++
+    } else if (ch === "/" && i + 1 < len && input[i + 1] === "*") {
+      i += 2
+      while (i + 1 < len && !(input[i] === "*" && input[i + 1] === "/")) i++
+      i += 2
+    } else {
+      out.push(ch)
+      i++
+    }
+  }
+  return out.join("")
+}
+
+function stripTrailingCommas(json: string): string {
+  return json.replace(/,(\s*[}\]])/g, "$1")
+}
+
+function parseJsonc(raw: string): unknown {
+  return JSON.parse(stripTrailingCommas(stripJsoncComments(raw)))
+}
+
+function validateJsonc(raw: string): boolean {
+  try { parseJsonc(raw); return true } catch { return false }
+}
+
 const configDir = ".bettercode"
 
 const defaultQualityGate = {
@@ -224,10 +270,9 @@ async function cmdSync() {
   if (existsSync(bcConfigPath)) {
     try {
       const raw = readFileSync(bcConfigPath, "utf8")
-      // TODO: use state-machine parser if URL/string values with // are added
-      const cleaned = raw.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "")
-      const config = JSON.parse(cleaned)
-      pluginOptions = config.plugin
+      const config = parseJsonc(raw) as Record<string, unknown> | null
+      if (!config || typeof config !== "object") throw new Error("Invalid JSONC")
+      pluginOptions = config.plugin as Record<string, unknown> | undefined
     } catch {
       // ignore invalid config
     }
@@ -245,9 +290,8 @@ async function cmdSync() {
     if (existsSync(opencodeConfig)) {
       try {
         const raw = readFileSync(opencodeConfig, "utf8")
-        // TODO: use state-machine parser if URL/string values with // are added
-        const cleaned = raw.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "")
-        const config = JSON.parse(cleaned)
+        const config = parseJsonc(raw) as Record<string, unknown> | null
+        if (!config || typeof config !== "object") throw new Error("Invalid JSONC")
 
         const pluginEntry = ["./plugin/bettercode.js", pluginOptions]
         const existingPlugins = Array.isArray(config.plugin) ? config.plugin : []
@@ -303,9 +347,7 @@ async function cmdDoctor() {
   if (existsSync(bcConfigPath)) {
     try {
       const raw = readFileSync(bcConfigPath, "utf8")
-      // TODO: use state-machine parser if URL/string values with // are added
-      const cleaned = raw.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "")
-      JSON.parse(cleaned)
+      if (!validateJsonc(raw)) throw new Error("Invalid JSONC")
       checks.push({ name: "BetterCode config", status: "ok", detail: ".bettercode/bettercode.jsonc valid" })
     } catch {
       checks.push({ name: "BetterCode config", status: "error", detail: ".bettercode/bettercode.jsonc is invalid JSONC" })
@@ -342,9 +384,7 @@ async function cmdDoctor() {
   if (existsSync(opencodeConfig)) {
     try {
       const raw = readFileSync(opencodeConfig, "utf8")
-      // TODO: use state-machine parser if URL/string values with // are added
-      const cleaned = raw.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "")
-      JSON.parse(cleaned)
+      if (!validateJsonc(raw)) throw new Error("Invalid JSONC")
       checks.push({ name: "OpenCode config", status: "ok", detail: ".opencode/opencode.jsonc valid" })
     } catch {
       checks.push({ name: "OpenCode config", status: "error", detail: ".opencode/opencode.jsonc is invalid JSONC" })

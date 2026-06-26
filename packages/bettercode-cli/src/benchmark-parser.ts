@@ -33,6 +33,37 @@ export function parseOpenCodeOutput(stdout: string): ParsedEvents {
       result.sessionID = obj.sessionID
     }
 
+    // OpenCode --format json events
+    if (obj.type === "text" && obj.part && typeof obj.part === "object") {
+      const part = obj.part as Record<string, unknown>
+      if (typeof part.text === "string" && part.text.trim()) {
+        textParts.push(part.text.trim())
+      }
+    }
+
+    if (obj.type === "tool_use" && obj.part && typeof obj.part === "object") {
+      const part = obj.part as Record<string, unknown>
+      if (typeof part.tool === "string") {
+        result.toolCallNames.push(part.tool)
+
+        if (part.state && typeof part.state === "object") {
+          const state = part.state as Record<string, unknown>
+          if (state.input && typeof state.input === "object") {
+            result.toolCallArgs.push(state.input as Record<string, unknown>)
+          }
+        }
+
+        if (part.tool === "task") {
+          result.subagentLaunches++
+        }
+      }
+    }
+
+    if (obj.type === "reasoning" && obj.part && typeof obj.part === "object") {
+      // Reasoning events are not counted as assistant text
+    }
+
+    // Fallback: OpenAI-style events (for tests or external providers)
     if (typeof obj.content === "string" && obj.role === "assistant") {
       textParts.push(obj.content)
     }
@@ -55,14 +86,11 @@ export function parseOpenCodeOutput(stdout: string): ParsedEvents {
       }
     }
 
-    if (obj.type === "tool_use" || obj.type === "function_call") {
-      const name = obj.name ?? obj.function_name
-      if (typeof name === "string") {
-        result.toolCallNames.push(name)
-      }
+    if (obj.type === "tool_use" && typeof obj.name === "string") {
+      result.toolCallNames.push(obj.name)
     }
 
-    if (obj.type === "subagent" || obj.type === "task") {
+    if (obj.type === "subagent") {
       result.subagentLaunches++
     }
   }

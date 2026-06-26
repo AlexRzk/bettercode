@@ -8,6 +8,29 @@ import { scoreRun } from "./benchmark-scorer"
 import { runValidationCommands } from "./benchmark-validate"
 import { generateBenchmarkReport } from "./benchmark-report"
 
+function getChangedFiles(root: string): string[] {
+  try {
+    const result = spawnSync("git", ["diff", "--name-only"], { cwd: root, encoding: "utf8", timeout: 5000 })
+    if (result.status !== 0) return []
+    return result.stdout.split("\n").map((l) => l.trim()).filter(Boolean)
+  } catch {
+    return []
+  }
+}
+
+function collectFilesFromEvents(events: ReturnType<typeof parseOpenCodeOutput>): string[] {
+  const files = new Set<string>()
+  for (const args of events.toolCallArgs) {
+    if (args && typeof args === "object") {
+      const a = args as Record<string, unknown>
+      if (typeof a.filePath === "string") files.add(a.filePath)
+      if (typeof a.path === "string") files.add(a.path)
+      if (typeof a.file === "string") files.add(a.file)
+    }
+  }
+  return [...files]
+}
+
 // Spawns a separate bun process to query the SQLite DB using bun:sqlite
 // to avoid bundling errors under Node runtime.
 function queryDbViaBun(dbPath: string, sessionID: string): RunStats {
@@ -144,19 +167,6 @@ function runSingleVariant(
   }
 }
 
-function collectFilesFromEvents(events: ReturnType<typeof parseOpenCodeOutput>): string[] {
-  const files = new Set<string>()
-  for (const args of events.toolCallArgs) {
-    if (args && typeof args === "object") {
-      const a = args as Record<string, unknown>
-      if (typeof a.filePath === "string") files.add(a.filePath)
-      if (typeof a.path === "string") files.add(a.path)
-      if (typeof a.file === "string") files.add(a.file)
-    }
-  }
-  return [...files]
-}
-
 export async function runBenchmark(repoRoot: string, extraArgs: string[] = []) {
   if (process.env.BUN_ENV === "test" || process.env.NODE_ENV === "test") {
     return {
@@ -233,6 +243,7 @@ export async function runBenchmark(repoRoot: string, extraArgs: string[] = []) {
     if (existsSync(opencodeConfig)) renameSync(opencodeConfig, opencodeConfigBak)
 
     let baselineResult: TaskRunResult
+    const baselineFilesBefore = getChangedFiles(repoRoot)
     try {
       const run = runSingleVariant(cmd, args, repoRoot, task.prompt, extraArgs, timeoutMs)
       writeFileSync(join(runDir, "baseline", `${task.id}.stdout.txt`), run.stdout)
@@ -242,15 +253,17 @@ export async function runBenchmark(repoRoot: string, extraArgs: string[] = []) {
       const sessionID = events.sessionID ?? findSessionID(run.stdout)
 
       const dbStats = sessionID ? queryDbViaBun(dbPath, sessionID) : makeEmptyStats()
-      const filesFromEvents = collectFilesFromEvents(events)
+      const filesRead = collectFilesFromEvents(events)
+      const baselineFilesAfter = getChangedFiles(repoRoot)
+      const filesChanged = baselineFilesAfter.filter((f) => !baselineFilesBefore.includes(f))
 
       const stats: RunStats = {
         ...dbStats,
         durationMs: run.durationMs,
         toolCalls: events.toolCallNames.length,
         subagents: events.subagentLaunches,
-        filesRead: filesFromEvents,
-        filesChanged: filesFromEvents,
+        filesRead,
+        filesChanged,
       }
 
       baselineResult = scoreRun({ task, events, stats, exitedNormally: run.exitCode === 0, timedOut: run.timedOut })
@@ -290,6 +303,7 @@ export async function runBenchmark(repoRoot: string, extraArgs: string[] = []) {
 
     // ── 2. BetterCode Run (Enable BetterCode) ──
     console.log("  Running BetterCode (OpenCode + Plugin)...")
+    const bettercodeFilesBefore = getChangedFiles(repoRoot)
     const run2 = runSingleVariant(cmd, args, repoRoot, task.prompt, extraArgs, timeoutMs)
     writeFileSync(join(runDir, "bettercode", `${task.id}.stdout.txt`), run2.stdout)
     writeFileSync(join(runDir, "bettercode", `${task.id}.stderr.txt`), run2.stderr)
@@ -298,15 +312,17 @@ export async function runBenchmark(repoRoot: string, extraArgs: string[] = []) {
     const sessionID2 = events2.sessionID ?? findSessionID(run2.stdout)
 
     const dbStats2 = sessionID2 ? queryDbViaBun(dbPath, sessionID2) : makeEmptyStats()
-    const filesFromEvents2 = collectFilesFromEvents(events2)
+    const filesRead2 = collectFilesFromEvents(events2)
+    const bettercodeFilesAfter = getChangedFiles(repoRoot)
+    const filesChanged2 = bettercodeFilesAfter.filter((f) => !bettercodeFilesBefore.includes(f))
 
     const stats2: RunStats = {
       ...dbStats2,
       durationMs: run2.durationMs,
       toolCalls: events2.toolCallNames.length,
       subagents: events2.subagentLaunches,
-      filesRead: filesFromEvents2,
-      filesChanged: filesFromEvents2,
+      filesRead: filesRead2,
+      filesChanged: filesChanged2,
     }
 
     let bettercodeResult = scoreRun({ task, events: events2, stats: stats2, exitedNormally: run2.exitCode === 0, timedOut: run2.timedOut })

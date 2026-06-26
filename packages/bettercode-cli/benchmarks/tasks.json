@@ -1,0 +1,17 @@
+[
+  {
+    "id": "project-summary",
+    "category": "understanding",
+    "prompt": "Summarize the bettercode project in 2 sentences. Focus on what it adds to OpenCode."
+  },
+  {
+    "id": "known-error-recall",
+    "category": "debugging",
+    "prompt": "If OpenCode plugin tools are not loading, what is the most likely cause related to symlinks?"
+  },
+  {
+    "id": "quality-gate-explain",
+    "category": "understanding",
+    "prompt": "Explain what the BetterCode quality gate command 'gate run' does and what it returns."
+  }
+]

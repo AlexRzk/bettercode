@@ -10,6 +10,7 @@ import { createRequire } from "node:module"
 import { runQualityGate } from "@bettercode/quality-gate"
 import { brainInit, brainUpdate, brainSearch } from "@bettercode/project-brain"
 import { generateSpec } from "./spec"
+import { runBenchmark } from "./benchmark"
 
 // ── Inline JSONC parser (state-machine, no external deps) ──
 
@@ -568,26 +569,6 @@ async function writeMissing(file: string, content: string) {
   if (existsSync(file)) return
   await mkdirAsync(dirname(file), { recursive: true })
   writeFileSync(file, content)
-}
-
-async function runBenchmark(repoRoot: string) {
-  const started = performance.now()
-  const gate = await runQualityGate(repoRoot)
-  const duration = Math.round(performance.now() - started)
-
-  return {
-    id: `bench-${Date.now()}`,
-    name: "Quality Gate Benchmark",
-    score: gate.score,
-    duration_ms: duration,
-    metadata: {
-      status: gate.status,
-      risk: gate.risk,
-      checks: gate.checks.length,
-      filesChanged: gate.filesChanged,
-      diffLines: gate.diffLines,
-    },
-  }
 }
 
 interface Report {

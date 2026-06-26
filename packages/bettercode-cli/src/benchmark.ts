@@ -1,23 +1,12 @@
-import { existsSync, readFileSync, writeFileSync, renameSync } from "node:fs"
+import { existsSync, readFileSync, writeFileSync, renameSync, cpSync, mkdirSync } from "node:fs"
 import { join, dirname } from "node:path"
 import { spawnSync } from "node:child_process"
 import os from "node:os"
-
-interface Task {
-  id: string
-  category: string
-  prompt: string
-}
-
-interface RunStats {
-  input: number
-  output: number
-  reasoning: number
-  cacheRead: number
-  cacheWrite: number
-  cost: number
-  durationMs: number
-}
+import type { BenchmarkTask, TaskRunResult, RunStats, TaskComparison, BenchmarkSuiteResult } from "./benchmark-types"
+import { parseOpenCodeOutput, findSessionID } from "./benchmark-parser"
+import { scoreRun } from "./benchmark-scorer"
+import { runValidationCommands } from "./benchmark-validate"
+import { generateBenchmarkReport } from "./benchmark-report"
 
 // Spawns a separate bun process to query the SQLite DB using bun:sqlite
 // to avoid bundling errors under Node runtime.
@@ -37,13 +26,14 @@ function queryDbViaBun(dbPath: string, sessionID: string): RunStats {
   try {
     const row = JSON.parse(child.stdout.trim())
     return {
-      input: row.tokens_input || 0,
-      output: row.tokens_output || 0,
-      reasoning: row.tokens_reasoning || 0,
-      cacheRead: row.tokens_cache_read || 0,
-      cacheWrite: row.tokens_cache_write || 0,
+      inputTokens: row.tokens_input || 0,
+      outputTokens: row.tokens_output || 0,
       cost: row.cost || 0,
       durationMs: 0,
+      toolCalls: 0,
+      subagents: 0,
+      filesRead: [],
+      filesChanged: [],
     }
   } catch (e: any) {
     throw new Error(`Failed to parse DB query output: ${e.message}`)
@@ -52,7 +42,6 @@ function queryDbViaBun(dbPath: string, sessionID: string): RunStats {
 
 function findDatabasePath(): string {
   const home = os.homedir()
-  // Check .local/share/opencode
   const xdgLocal = join(home, ".local", "share", "opencode")
   if (existsSync(xdgLocal)) {
     const devDb = join(xdgLocal, "opencode-local.db")
@@ -61,7 +50,6 @@ function findDatabasePath(): string {
     if (existsSync(prodDb)) return prodDb
   }
 
-  // Fallback to standard XDG paths
   let dataDir = ""
   if (process.platform === "win32") {
     dataDir = join(process.env.LOCALAPPDATA || join(home, "AppData", "Local"), "opencode")
@@ -77,7 +65,6 @@ function findDatabasePath(): string {
 }
 
 function getOpencodeCommand(root: string): { cmd: string; args: string[] } {
-  // Monorepo dev mode
   const devOpencodeDir = join(root, "packages", "opencode")
   if (existsSync(join(devOpencodeDir, "src", "index.ts"))) {
     return {
@@ -86,13 +73,11 @@ function getOpencodeCommand(root: string): { cmd: string; args: string[] } {
     }
   }
 
-  // Global binary
   const lildaxOnPath = spawnSync("lildax", ["--version"], { encoding: "utf8", timeout: 5000 })
   if (lildaxOnPath.status === 0) {
     return { cmd: "lildax", args: [] }
   }
 
-  // Local node_modules
   const candidate = join(root, "node_modules", "@opencode-ai", "cli", "bin", "lildax.cjs")
   if (existsSync(candidate)) {
     return { cmd: process.execPath, args: [candidate] }
@@ -101,26 +86,78 @@ function getOpencodeCommand(root: string): { cmd: string; args: string[] } {
   throw new Error("OpenCode CLI not found. Run 'npm install -g @opencode-ai/cli' first.")
 }
 
-const defaultTasks: Task[] = [
+const defaultTasks: BenchmarkTask[] = [
   {
     id: "project-summary",
-    category: "understanding",
-    prompt: "Summarize the bettercode project in 2 sentences. Focus on what it adds to OpenCode."
+    category: "knowledge",
+    prompt: "Summarize the bettercode project in 2 sentences. Focus on what it adds to OpenCode.",
+    expected: {
+      contains: ["OpenCode", "plugin"],
+      maxToolCalls: 5,
+      maxSubagents: 0,
+    },
   },
   {
     id: "known-error-recall",
     category: "debugging",
-    prompt: "If OpenCode plugin tools are not loading, what is the most likely cause related to symlinks?"
+    prompt: "If OpenCode plugin tools are not loading, what is the most likely cause related to symlinks?",
+    expected: {
+      contains: ["symlink"],
+      maxToolCalls: 3,
+      maxSubagents: 0,
+    },
   },
   {
     id: "quality-gate-explain",
     category: "understanding",
-    prompt: "Explain what the BetterCode quality gate command 'gate run' does and what it returns."
-  }
+    prompt: "Explain what the BetterCode quality gate command 'gate run' does and what it returns.",
+    expected: {
+      contains: ["lint", "typecheck", "test", "build"],
+      maxSubagents: 0,
+    },
+  },
 ]
 
+function runSingleVariant(
+  cmd: string,
+  args: string[],
+  repoRoot: string,
+  prompt: string,
+  extraArgs: string[],
+  timeoutMs: number,
+): { stdout: string; stderr: string; exitCode: number; timedOut: boolean; durationMs: number } {
+  const started = performance.now()
+  const child = spawnSync(cmd, [...args, "run", "--format", "json", "--dangerously-skip-permissions", ...extraArgs, prompt], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    timeout: timeoutMs,
+  })
+  const durationMs = Math.round(performance.now() - started)
+
+  const timedOut = child.status === null || (child.error != null && (child.error as NodeJS.ErrnoException).code === "ETIMEDOUT")
+  return {
+    stdout: child.stdout ?? "",
+    stderr: child.stderr ?? "",
+    exitCode: child.status ?? 1,
+    timedOut,
+    durationMs,
+  }
+}
+
+function collectFilesFromEvents(events: ReturnType<typeof parseOpenCodeOutput>): string[] {
+  const files = new Set<string>()
+  for (const args of events.toolCallArgs) {
+    if (args && typeof args === "object") {
+      const a = args as Record<string, unknown>
+      if (typeof a.filePath === "string") files.add(a.filePath)
+      if (typeof a.path === "string") files.add(a.path)
+      if (typeof a.file === "string") files.add(a.file)
+    }
+  }
+  return [...files]
+}
+
 export async function runBenchmark(repoRoot: string, extraArgs: string[] = []) {
-  // Test mock mode to avoid calling live LLM APIs in tests
   if (process.env.BUN_ENV === "test" || process.env.NODE_ENV === "test") {
     return {
       score: 25,
@@ -128,13 +165,24 @@ export async function runBenchmark(repoRoot: string, extraArgs: string[] = []) {
       name: "Comparison Benchmark Suite (Mocked)",
       metadata: {
         tasksRun: 3,
-        netSavingsPercent: "25.0%",
-        netCostSavings: "$0.0234",
+        passRateBaseline: "0.0%",
+        passRateBetterCode: "0.0%",
+        avgScoreBaseline: 0,
+        avgScoreBetterCode: 0,
+        netTokenSavings: "0",
+        totalBaselineTokens: 0,
+        totalBettercodeTokens: 0,
+        totalBaselineCost: 0,
+        totalBettercodeCost: 0,
+        timeoutCountBaseline: 0,
+        timeoutCountBettercode: 0,
+        errorCountBaseline: 0,
+        errorCountBettercode: 0,
+        netCostSavings: "$0.0000",
       },
     }
   }
 
-  // Verify bun is installed since we need it to spawn bun -e for DB queries
   const bunCheck = spawnSync("bun", ["--version"], { encoding: "utf8" })
   if (bunCheck.status !== 0) {
     throw new Error("Bun is required to run benchmarks.")
@@ -145,17 +193,12 @@ export async function runBenchmark(repoRoot: string, extraArgs: string[] = []) {
     throw new Error(`OpenCode database not found. Run opencode at least once. (Searched: ${dbPath})`)
   }
 
-  // Use custom tasks if tasks.json exists in project root, otherwise use inlined defaults
   const customTasksFile = join(repoRoot, ".bettercode", "tasks.json")
   const tasks = existsSync(customTasksFile)
-    ? JSON.parse(readFileSync(customTasksFile, "utf8")) as Task[]
+    ? JSON.parse(readFileSync(customTasksFile, "utf8")) as BenchmarkTask[]
     : defaultTasks
 
-  const results: {
-    task: Task
-    baseline: RunStats
-    bettercode: RunStats
-  }[] = []
+  const comparisons: TaskComparison[] = []
 
   const pluginFile = join(repoRoot, ".opencode", "plugin", "bettercode.js")
   const pluginFileBak = join(repoRoot, ".opencode", "plugin", "bettercode.js.bak")
@@ -163,15 +206,25 @@ export async function runBenchmark(repoRoot: string, extraArgs: string[] = []) {
   const opencodeConfigBak = join(repoRoot, ".opencode", "opencode.jsonc.bak")
 
   const { cmd, args } = getOpencodeCommand(repoRoot)
+  const defaultTimeout = 300_000
+
+  const runDir = join(repoRoot, ".bettercode", "benchmark-runs", new Date().toISOString().replace(/[:.]/g, "-"))
+  mkdirSync(join(runDir, "baseline"), { recursive: true })
+  mkdirSync(join(runDir, "bettercode"), { recursive: true })
 
   console.log(`Running benchmark suite containing ${tasks.length} tasks...`)
   console.log(`Using OpenCode: ${cmd} ${args.join(" ")}`)
   if (extraArgs.length > 0) {
     console.log(`Forwarding OpenCode flags: ${extraArgs.join(" ")}`)
   }
-  console.log(`Database path: ${dbPath}\n`)
+  console.log(`Database path: ${dbPath}`)
+  console.log(`Artifacts: ${runDir}\n`)
+
+  const baselineResults: TaskRunResult[] = []
+  const bettercodeResults: TaskRunResult[] = []
 
   for (const task of tasks) {
+    const timeoutMs = task.timeoutMs ?? defaultTimeout
     console.log(`[Task: ${task.id}] - ${task.prompt}`)
 
     // ── 1. Baseline Run (Disable BetterCode) ──
@@ -179,137 +232,182 @@ export async function runBenchmark(repoRoot: string, extraArgs: string[] = []) {
     if (existsSync(pluginFile)) renameSync(pluginFile, pluginFileBak)
     if (existsSync(opencodeConfig)) renameSync(opencodeConfig, opencodeConfigBak)
 
-    let baselineStats: RunStats
+    let baselineResult: TaskRunResult
     try {
-      const started = performance.now()
-      const child = spawnSync(cmd, [...args, "run", "--format", "json", "--dangerously-skip-permissions", ...extraArgs, task.prompt], {
-        cwd: repoRoot,
-        encoding: "utf8",
-        timeout: 300_000,
-      })
-      const durationMs = Math.round(performance.now() - started)
+      const run = runSingleVariant(cmd, args, repoRoot, task.prompt, extraArgs, timeoutMs)
+      writeFileSync(join(runDir, "baseline", `${task.id}.stdout.txt`), run.stdout)
+      writeFileSync(join(runDir, "baseline", `${task.id}.stderr.txt`), run.stderr)
 
-      // Find sessionID
-      const lines = child.stdout.split("\n")
-      let sessionID: string | undefined
-      for (const line of lines) {
-        try {
-          const event = JSON.parse(line.trim())
-          if (event && typeof event === "object" && "sessionID" in event) {
-            sessionID = event.sessionID
-            break
-          }
-        } catch {}
+      const events = parseOpenCodeOutput(run.stdout)
+      const sessionID = events.sessionID ?? findSessionID(run.stdout)
+
+      const dbStats = sessionID ? queryDbViaBun(dbPath, sessionID) : makeEmptyStats()
+      const filesFromEvents = collectFilesFromEvents(events)
+
+      const stats: RunStats = {
+        ...dbStats,
+        durationMs: run.durationMs,
+        toolCalls: events.toolCallNames.length,
+        subagents: events.subagentLaunches,
+        filesRead: filesFromEvents,
+        filesChanged: filesFromEvents,
       }
 
-      if (!sessionID) {
-        throw new Error("Could not extract sessionID from Baseline run output")
+      baselineResult = scoreRun({ task, events, stats, exitedNormally: run.exitCode === 0, timedOut: run.timedOut })
+      baselineResult.variant = "baseline"
+      writeFileSync(join(runDir, "baseline", `${task.id}.result.json`), JSON.stringify(baselineResult, null, 2))
+    } catch (err: any) {
+      baselineResult = {
+        taskId: task.id,
+        variant: "baseline",
+        status: "ERROR",
+        score: 0,
+        reasons: [err.message],
+        stats: makeEmptyStats(),
+        events: { assistantText: "", toolCallNames: [], toolCallArgs: [], subagentLaunches: 0, rawEvents: [] },
       }
-
-      const dbStats = queryDbViaBun(dbPath, sessionID)
-      baselineStats = { ...dbStats, durationMs }
-      console.log(`    Tokens: Input=${baselineStats.input}, Output=${baselineStats.output}, Cost=$${baselineStats.cost.toFixed(4)}`)
     } finally {
-      // Restore
       if (existsSync(pluginFileBak)) renameSync(pluginFileBak, pluginFile)
       if (existsSync(opencodeConfigBak)) renameSync(opencodeConfigBak, opencodeConfig)
     }
 
+    // Run validation commands for baseline if specified
+    if (task.expected?.commandsPass && baselineResult.status !== "TIMEOUT" && baselineResult.status !== "ERROR") {
+      const validations = runValidationCommands(repoRoot, task.expected.commandsPass)
+      for (const v of validations) {
+        if (!v.passed) {
+          baselineResult.score -= 40
+          baselineResult.reasons.push(`Validation failed: ${v.command} (exit ${v.exitCode})`)
+          if (v.output) baselineResult.reasons.push(v.output.slice(0, 200))
+        }
+      }
+      baselineResult.score = Math.max(0, baselineResult.score)
+      baselineResult.status = baselineResult.score >= 90 ? "PASS" : "FAIL"
+    }
+
+    console.log(`    Status: ${baselineResult.status} | Score: ${baselineResult.score} | Tokens: ${baselineResult.stats.inputTokens} in / ${baselineResult.stats.outputTokens} out | Cost: $${baselineResult.stats.cost.toFixed(4)}`)
+    baselineResults.push(baselineResult)
+
     // ── 2. BetterCode Run (Enable BetterCode) ──
     console.log("  Running BetterCode (OpenCode + Plugin)...")
-    const started = performance.now()
-    const child = spawnSync(cmd, [...args, "run", "--format", "json", "--dangerously-skip-permissions", ...extraArgs, task.prompt], {
-      cwd: repoRoot,
-      encoding: "utf8",
-      timeout: 300_000,
-    })
-    const durationMs = Math.round(performance.now() - started)
+    const run2 = runSingleVariant(cmd, args, repoRoot, task.prompt, extraArgs, timeoutMs)
+    writeFileSync(join(runDir, "bettercode", `${task.id}.stdout.txt`), run2.stdout)
+    writeFileSync(join(runDir, "bettercode", `${task.id}.stderr.txt`), run2.stderr)
 
-    // Find sessionID
-    const lines = child.stdout.split("\n")
-    let sessionID: string | undefined
-    for (const line of lines) {
-      try {
-        const event = JSON.parse(line.trim())
-        if (event && typeof event === "object" && "sessionID" in event) {
-          sessionID = event.sessionID
-          break
+    const events2 = parseOpenCodeOutput(run2.stdout)
+    const sessionID2 = events2.sessionID ?? findSessionID(run2.stdout)
+
+    const dbStats2 = sessionID2 ? queryDbViaBun(dbPath, sessionID2) : makeEmptyStats()
+    const filesFromEvents2 = collectFilesFromEvents(events2)
+
+    const stats2: RunStats = {
+      ...dbStats2,
+      durationMs: run2.durationMs,
+      toolCalls: events2.toolCallNames.length,
+      subagents: events2.subagentLaunches,
+      filesRead: filesFromEvents2,
+      filesChanged: filesFromEvents2,
+    }
+
+    let bettercodeResult = scoreRun({ task, events: events2, stats: stats2, exitedNormally: run2.exitCode === 0, timedOut: run2.timedOut })
+
+    // Run validation commands for bettercode if specified
+    if (task.expected?.commandsPass && bettercodeResult.status !== "TIMEOUT" && bettercodeResult.status !== "ERROR") {
+      const validations = runValidationCommands(repoRoot, task.expected.commandsPass)
+      for (const v of validations) {
+        if (!v.passed) {
+          bettercodeResult.score -= 40
+          bettercodeResult.reasons.push(`Validation failed: ${v.command} (exit ${v.exitCode})`)
+          if (v.output) bettercodeResult.reasons.push(v.output.slice(0, 200))
         }
-      } catch {}
+      }
+      bettercodeResult.score = Math.max(0, bettercodeResult.score)
+      bettercodeResult.status = bettercodeResult.score >= 90 ? "PASS" : "FAIL"
     }
 
-    if (!sessionID) {
-      throw new Error("Could not extract sessionID from BetterCode run output")
-    }
+    writeFileSync(join(runDir, "bettercode", `${task.id}.result.json`), JSON.stringify(bettercodeResult, null, 2))
 
-    const dbStats = queryDbViaBun(dbPath, sessionID)
-    const bettercodeStats = { ...dbStats, durationMs }
-    console.log(`    Tokens: Input=${bettercodeStats.input}, Output=${bettercodeStats.output}, Cost=$${bettercodeStats.cost.toFixed(4)}`)
+    console.log(`    Status: ${bettercodeResult.status} | Score: ${bettercodeResult.score} | Tokens: ${bettercodeResult.stats.inputTokens} in / ${bettercodeResult.stats.outputTokens} out | Cost: $${bettercodeResult.stats.cost.toFixed(4)}`)
+    bettercodeResults.push(bettercodeResult)
 
-    results.push({
-      task,
-      baseline: baselineStats,
-      bettercode: bettercodeStats,
-    })
+    comparisons.push({ task, baseline: baselineResult, bettercode: bettercodeResult })
+    console.log("")
   }
 
   // ── 3. Generate Report ──
-  let totalBaselineTokens = 0
-  let totalBettercodeTokens = 0
-  let totalBaselineCost = 0
-  let totalBettercodeCost = 0
+  const totalBaselineTokens = baselineResults.reduce((sum, r) => sum + r.stats.inputTokens + r.stats.outputTokens, 0)
+  const totalBettercodeTokens = bettercodeResults.reduce((sum, r) => sum + r.stats.inputTokens + r.stats.outputTokens, 0)
+  const totalBaselineCost = baselineResults.reduce((sum, r) => sum + r.stats.cost, 0)
+  const totalBettercodeCost = bettercodeResults.reduce((sum, r) => sum + r.stats.cost, 0)
 
-  let report = `# BetterCode Benchmark Report\n\n`
-  report += `Generated on: ${new Date().toLocaleString()}\n`
-  report += `Model: auto (resolved by OpenCode)\n\n`
+  const passCountBaseline = baselineResults.filter((r) => r.status === "PASS").length
+  const passCountBettercode = bettercodeResults.filter((r) => r.status === "PASS").length
+  const passRateBaseline = tasks.length > 0 ? ((passCountBaseline / tasks.length) * 100).toFixed(1) + "%" : "0.0%"
+  const passRateBettercode = tasks.length > 0 ? ((passCountBettercode / tasks.length) * 100).toFixed(1) + "%" : "0.0%"
 
-  report += `## Summary Table\n\n`
-  report += `| Task ID | Metric | Baseline | BetterCode | Savings |\n`
-  report += `| --- | --- | ---: | ---: | ---: |\n`
+  const avgScoreBaseline = tasks.length > 0 ? Math.round(baselineResults.reduce((sum, r) => sum + r.score, 0) / tasks.length) : 0
+  const avgScoreBettercode = tasks.length > 0 ? Math.round(bettercodeResults.reduce((sum, r) => sum + r.score, 0) / tasks.length) : 0
 
-  for (const r of results) {
-    const baseTotal = r.baseline.input + r.baseline.output
-    const bcTotal = r.bettercode.input + r.bettercode.output
-    const savings = baseTotal - bcTotal
-    const savingsPercent = baseTotal > 0 ? (savings / baseTotal) * 100 : 0
-
-    totalBaselineTokens += baseTotal
-    totalBettercodeTokens += bcTotal
-    totalBaselineCost += r.baseline.cost
-    totalBettercodeCost += r.bettercode.cost
-
-    report += `| **${r.task.id}** | Input Tokens | ${r.baseline.input} | ${r.bettercode.input} | ${(r.baseline.input - r.bettercode.input)} |\n`
-    report += `| | Output Tokens | ${r.baseline.output} | ${r.bettercode.output} | ${(r.baseline.output - r.bettercode.output)} |\n`
-    report += `| | Total Tokens | ${baseTotal} | ${bcTotal} | ${savings} (${savingsPercent.toFixed(1)}%) |\n`
-    report += `| | Cost ($) | $${r.baseline.cost.toFixed(4)} | $${r.bettercode.cost.toFixed(4)} | $${(r.baseline.cost - r.bettercode.cost).toFixed(4)} |\n`
-    report += `| | Duration (s) | ${(r.baseline.durationMs / 1000).toFixed(1)}s | ${(r.bettercode.durationMs / 1000).toFixed(1)}s | ${((r.baseline.durationMs - r.bettercode.durationMs) / 1000).toFixed(1)}s |\n`
-    report += `| | | | | |\n`
-  }
+  const timeoutCountBaseline = baselineResults.filter((r) => r.status === "TIMEOUT").length
+  const timeoutCountBettercode = bettercodeResults.filter((r) => r.status === "TIMEOUT").length
+  const errorCountBaseline = baselineResults.filter((r) => r.status === "ERROR").length
+  const errorCountBettercode = bettercodeResults.filter((r) => r.status === "ERROR").length
 
   const netSavings = totalBaselineTokens - totalBettercodeTokens
   const netSavingsPercent = totalBaselineTokens > 0 ? (netSavings / totalBaselineTokens) * 100 : 0
 
-  report += `## Aggregated Totals\n\n`
-  report += `- **Total Baseline Tokens:** ${totalBaselineTokens}\n`
-  report += `- **Total BetterCode Tokens:** ${totalBettercodeTokens}\n`
-  report += `- **Net Token Savings:** **${netSavings}** (${netSavingsPercent.toFixed(1)}%)\n`
-  report += `- **Total Baseline Cost:** $${totalBaselineCost.toFixed(4)}\n`
-  report += `- **Total BetterCode Cost:** $${totalBettercodeCost.toFixed(4)}\n`
-  report += `- **Net Cost Savings:** **$${(totalBaselineCost - totalBettercodeCost).toFixed(4)}**\n`
+  const suiteResult: BenchmarkSuiteResult = {
+    name: "Comparison Benchmark Suite",
+    score: Math.round(avgScoreBettercode),
+    duration_ms: baselineResults.reduce((sum, r) => sum + r.stats.durationMs, 0) + bettercodeResults.reduce((sum, r) => sum + r.stats.durationMs, 0),
+    metadata: {
+      tasksRun: tasks.length,
+      passRateBaseline,
+      passRateBetterCode: passRateBettercode,
+      avgScoreBaseline,
+      avgScoreBetterCode: avgScoreBettercode,
+      totalBaselineTokens,
+      totalBettercodeTokens,
+      netTokenSavings: `${netSavingsPercent.toFixed(1)}%`,
+      totalBaselineCost,
+      totalBettercodeCost,
+      timeoutCountBaseline,
+      timeoutCountBettercode,
+      errorCountBaseline,
+      errorCountBettercode,
+    },
+    comparisons,
+  }
 
+  const report = generateBenchmarkReport(suiteResult)
   const reportPath = join(repoRoot, "docs", "benchmark-report.md")
   writeFileSync(reportPath, report)
 
-  console.log(`\n✓ Benchmark complete! Report written to ${reportPath}`)
+  writeFileSync(join(runDir, "suite-result.json"), JSON.stringify(suiteResult, null, 2))
+
+  console.log(`\nBenchmark complete!`)
+  console.log(`  Report: ${reportPath}`)
+  console.log(`  Artifacts: ${runDir}`)
+  console.log(`  Baseline pass rate: ${passRateBaseline} | BetterCode pass rate: ${passRateBettercode}`)
+  console.log(`  Avg score: Baseline ${avgScoreBaseline} | BetterCode ${avgScoreBettercode}`)
 
   return {
-    score: Math.round(netSavingsPercent),
-    duration_ms: results.reduce((acc, r) => acc + r.baseline.durationMs + r.bettercode.durationMs, 0),
-    name: "Comparison Benchmark Suite",
-    metadata: {
-      tasksRun: tasks.length,
-      netSavingsPercent: `${netSavingsPercent.toFixed(1)}%`,
-      netCostSavings: `$${(totalBaselineCost - totalBettercodeCost).toFixed(4)}`,
-    },
+    score: Math.round(avgScoreBettercode),
+    duration_ms: suiteResult.duration_ms,
+    name: suiteResult.name,
+    metadata: suiteResult.metadata,
+  }
+}
+
+function makeEmptyStats(): RunStats {
+  return {
+    inputTokens: 0,
+    outputTokens: 0,
+    cost: 0,
+    durationMs: 0,
+    toolCalls: 0,
+    subagents: 0,
+    filesRead: [],
+    filesChanged: [],
   }
 }

@@ -523,7 +523,10 @@ async function cmdSpec() {
 }
 
 async function cmdBenchmarkRun() {
-  const result = await runBenchmark(root)
+  const dashIdx = process.argv.indexOf("--")
+  const runArgs = dashIdx >= 0 ? process.argv.slice(dashIdx + 1) : []
+
+  const result = await runBenchmark(root, runArgs)
   if (flags.json) {
     jsonOutput(result)
   } else {

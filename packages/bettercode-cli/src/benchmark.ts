@@ -119,7 +119,7 @@ const defaultTasks: Task[] = [
   }
 ]
 
-export async function runBenchmark(repoRoot: string) {
+export async function runBenchmark(repoRoot: string, extraArgs: string[] = []) {
   // Test mock mode to avoid calling live LLM APIs in tests
   if (process.env.BUN_ENV === "test" || process.env.NODE_ENV === "test") {
     return {
@@ -166,6 +166,9 @@ export async function runBenchmark(repoRoot: string) {
 
   console.log(`Running benchmark suite containing ${tasks.length} tasks...`)
   console.log(`Using OpenCode: ${cmd} ${args.join(" ")}`)
+  if (extraArgs.length > 0) {
+    console.log(`Forwarding OpenCode flags: ${extraArgs.join(" ")}`)
+  }
   console.log(`Database path: ${dbPath}\n`)
 
   for (const task of tasks) {
@@ -179,7 +182,7 @@ export async function runBenchmark(repoRoot: string) {
     let baselineStats: RunStats
     try {
       const started = performance.now()
-      const child = spawnSync(cmd, [...args, "run", "--format", "json", "--dangerously-skip-permissions", task.prompt], {
+      const child = spawnSync(cmd, [...args, "run", "--format", "json", "--dangerously-skip-permissions", ...extraArgs, task.prompt], {
         cwd: repoRoot,
         encoding: "utf8",
         timeout: 300_000,
@@ -215,7 +218,7 @@ export async function runBenchmark(repoRoot: string) {
     // ── 2. BetterCode Run (Enable BetterCode) ──
     console.log("  Running BetterCode (OpenCode + Plugin)...")
     const started = performance.now()
-    const child = spawnSync(cmd, [...args, "run", "--format", "json", "--dangerously-skip-permissions", task.prompt], {
+    const child = spawnSync(cmd, [...args, "run", "--format", "json", "--dangerously-skip-permissions", ...extraArgs, task.prompt], {
       cwd: repoRoot,
       encoding: "utf8",
       timeout: 300_000,

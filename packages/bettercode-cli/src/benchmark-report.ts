@@ -9,6 +9,7 @@ export function generateBenchmarkReport(result: BenchmarkSuiteResult): string {
   lines.push(`Model: auto (resolved by OpenCode)`)
   lines.push("")
 
+  // ── Summary ──
   lines.push(`## Summary`)
   lines.push("")
   lines.push(`| Metric | Baseline | BetterCode | Delta |`)
@@ -21,6 +22,26 @@ export function generateBenchmarkReport(result: BenchmarkSuiteResult): string {
   lines.push(`| Errors | ${result.metadata.errorCountBaseline} | ${result.metadata.errorCountBettercode} | ${result.metadata.errorCountBaseline - result.metadata.errorCountBettercode} |`)
   lines.push("")
 
+  // ── Category Pass Rates ──
+  const categories = [...new Set(result.comparisons.map((c) => c.task.category))]
+  if (categories.length > 1) {
+    lines.push(`## Pass Rate By Category`)
+    lines.push("")
+    lines.push(`| Category | Baseline | BetterCode | Delta |`)
+    lines.push(`| --- | ---: | ---: | ---: |`)
+
+    for (const cat of categories) {
+      const catTasks = result.comparisons.filter((c) => c.task.category === cat)
+      const catPassBaseline = catTasks.filter((c) => c.baseline.status === "PASS").length
+      const catPassBettercode = catTasks.filter((c) => c.bettercode.status === "PASS").length
+      const rateBaseline = catTasks.length > 0 ? ((catPassBaseline / catTasks.length) * 100).toFixed(0) + "%" : "N/A"
+      const rateBettercode = catTasks.length > 0 ? ((catPassBettercode / catTasks.length) * 100).toFixed(0) + "%" : "N/A"
+      lines.push(`| ${cat} | ${rateBaseline} | ${rateBettercode} | ${deltaPercent(rateBaseline, rateBettercode)} |`)
+    }
+    lines.push("")
+  }
+
+  // ── Per-Task Results ──
   lines.push(`## Per-Task Results`)
   lines.push("")
   lines.push(`| Task | Category | Base Score | BC Score | Base Tokens | BC Tokens | Base Status | BC Status |`)
@@ -33,6 +54,18 @@ export function generateBenchmarkReport(result: BenchmarkSuiteResult): string {
   }
   lines.push("")
 
+  // ── Tool Usage ──
+  lines.push(`## Tool Usage`)
+  lines.push("")
+  lines.push(`| Task | Base Tool Calls | BC Tool Calls | Base Subagents | BC Subagents |`)
+  lines.push(`| --- | ---: | ---: | ---: | ---: |`)
+
+  for (const comp of result.comparisons) {
+    lines.push(`| ${comp.task.id} | ${comp.baseline.stats.toolCalls} | ${comp.bettercode.stats.toolCalls} | ${comp.baseline.stats.subagents} | ${comp.bettercode.stats.subagents} |`)
+  }
+  lines.push("")
+
+  // ── Issues And Warnings ──
   const failures = result.comparisons.filter(
     (c) =>
       c.bettercode.status !== "PASS" ||
@@ -65,6 +98,14 @@ export function generateBenchmarkReport(result: BenchmarkSuiteResult): string {
       }
       if (comp.baseline.score > comp.bettercode.score) {
         lines.push(`- Warning: Baseline scored higher (${comp.baseline.score} > ${comp.bettercode.score}). BetterCode may be adding irrelevant context or overhead.`)
+      }
+      if (comp.baseline.artifacts?.validation) {
+        const v = comp.baseline.artifacts.validation
+        lines.push(`- Baseline validation: ${v.passed ? "PASS" : "FAIL"} (${v.command}, exit ${v.exitCode})`)
+      }
+      if (comp.bettercode.artifacts?.validation) {
+        const v = comp.bettercode.artifacts.validation
+        lines.push(`- BetterCode validation: ${v.passed ? "PASS" : "FAIL"} (${v.command}, exit ${v.exitCode})`)
       }
       lines.push("")
     }

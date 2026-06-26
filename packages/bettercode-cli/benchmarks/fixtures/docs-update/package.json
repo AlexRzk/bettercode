@@ -1,0 +1,8 @@
+{
+  "name": "benchmark-docs-update",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js"
+  }
+}

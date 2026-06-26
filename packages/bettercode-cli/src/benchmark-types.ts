@@ -3,6 +3,9 @@ export interface BenchmarkTask {
   category: string
   prompt: string
   timeoutMs?: number
+  fixture?: string
+  setupCommands?: string[]
+  validationCwd?: string
   expected?: TaskExpectations
 }
 
@@ -11,6 +14,8 @@ export interface TaskExpectations {
   notContains?: string[]
   filesChanged?: string[]
   filesNotChanged?: string[]
+  filesRead?: string[]
+  filesNotRead?: string[]
   commandsPass?: string[]
   minQualityScore?: number
   maxToolCalls?: number
@@ -25,6 +30,22 @@ export interface TaskRunResult {
   reasons: string[]
   stats: RunStats
   events: ParsedEvents
+  artifacts?: TaskArtifacts
+}
+
+export interface TaskArtifacts {
+  stdout: string
+  stderr: string
+  validation?: ValidationResult
+}
+
+export interface ValidationResult {
+  passed: boolean
+  command: string
+  exitCode: number
+  output: string
+  durationMs: number
+  error?: string
 }
 
 export interface RunStats {

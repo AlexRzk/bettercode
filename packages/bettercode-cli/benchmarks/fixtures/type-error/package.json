@@ -1,0 +1,10 @@
+{
+  "name": "benchmark-type-error",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

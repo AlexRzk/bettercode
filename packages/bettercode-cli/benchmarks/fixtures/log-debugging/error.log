@@ -1,0 +1,9 @@
+TypeError: Cannot read properties of undefined (reading 'token')
+    at validateSession (C:/project/src/session.ts:15:23)
+    at handleRequest (C:/project/src/server.ts:42:12)
+    at Layer.run (C:/project/node_modules/effect/src/Layer.ts:832:18)
+
+Error: Session expired
+    at TokenManager.refresh (C:/project/src/auth/token.ts:67:11)
+    at async TokenManager.getToken (C:/project/src/auth/token.ts:45:15)
+    at async validateSession (C:/project/src/session.ts:12:18)

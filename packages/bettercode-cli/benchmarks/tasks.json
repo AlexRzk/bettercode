@@ -1,17 +1,87 @@
 [
   {
+    "id": "type-error-repair",
+    "category": "coding",
+    "fixture": "type-error",
+    "prompt": "Fix the TypeScript error in src/index.ts. The greet function expects a User object but is being called with a string.",
+    "timeoutMs": 180000,
+    "expected": {
+      "contains": ["greet", "User"],
+      "commandsPass": ["bun run typecheck"],
+      "filesChanged": ["src/index.ts"],
+      "maxToolCalls": 15,
+      "maxSubagents": 0
+    }
+  },
+  {
+    "id": "failing-test-repair",
+    "category": "coding",
+    "fixture": "failing-test",
+    "prompt": "The math tests are failing. Fix the implementation in src/math.ts so all tests pass.",
+    "timeoutMs": 180000,
+    "expected": {
+      "contains": ["add"],
+      "commandsPass": ["bun test"],
+      "filesChanged": ["src/math.ts"],
+      "maxToolCalls": 15,
+      "maxSubagents": 0
+    }
+  },
+  {
     "id": "project-summary",
-    "category": "understanding",
-    "prompt": "Summarize the bettercode project in 2 sentences. Focus on what it adds to OpenCode."
+    "category": "knowledge",
+    "prompt": "Summarize the bettercode project in 2 sentences. Focus on what it adds to OpenCode.",
+    "timeoutMs": 120000,
+    "expected": {
+      "contains": ["OpenCode"],
+      "maxToolCalls": 5,
+      "maxSubagents": 0
+    }
   },
   {
     "id": "known-error-recall",
     "category": "debugging",
-    "prompt": "If OpenCode plugin tools are not loading, what is the most likely cause related to symlinks?"
+    "prompt": "If OpenCode plugin tools are not loading, what is the most likely cause related to symlinks?",
+    "timeoutMs": 120000,
+    "expected": {
+      "contains": ["symlink"],
+      "maxToolCalls": 3,
+      "maxSubagents": 0
+    }
   },
   {
     "id": "quality-gate-explain",
     "category": "understanding",
-    "prompt": "Explain what the BetterCode quality gate command 'gate run' does and what it returns."
+    "prompt": "Explain what the BetterCode quality gate command 'gate run' does and what it returns.",
+    "timeoutMs": 120000,
+    "expected": {
+      "contains": ["lint", "typecheck", "test", "build"],
+      "maxSubagents": 0
+    }
+  },
+  {
+    "id": "log-debugging",
+    "category": "debugging",
+    "fixture": "log-debugging",
+    "prompt": "Read the error.log file and explain the root cause. What is the most likely fix?",
+    "timeoutMs": 120000,
+    "expected": {
+      "contains": ["token", "undefined"],
+      "maxToolCalls": 5,
+      "maxSubagents": 0
+    }
+  },
+  {
+    "id": "docs-update",
+    "category": "coding",
+    "fixture": "docs-update",
+    "prompt": "The README is missing documentation for the farewell function. Add it to the README.",
+    "timeoutMs": 120000,
+    "expected": {
+      "contains": ["farewell"],
+      "filesChanged": ["README.md"],
+      "maxToolCalls": 10,
+      "maxSubagents": 0
+    }
   }
 ]

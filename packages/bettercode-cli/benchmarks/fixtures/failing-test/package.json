@@ -1,0 +1,10 @@
+{
+  "name": "benchmark-failing-test",
+  "private": true,
+  "scripts": {
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

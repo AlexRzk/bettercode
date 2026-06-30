@@ -124,11 +124,16 @@ function createIsolatedWorkspace(fixtureDir: string, label: string, runDir: stri
 }
 
 function enableBetterCodeInWorkspace(workspace: string, repoRoot: string) {
-  // Copy .bettercode config into fixture workspace
+  // Copy .bettercode config into fixture workspace (exclude benchmark-runs to avoid recursion)
   const repoBettercode = join(repoRoot, ".bettercode")
   const wsBettercode = join(workspace, ".bettercode")
   if (existsSync(repoBettercode)) {
     cpSync(repoBettercode, wsBettercode, { recursive: true })
+    // Remove benchmark-runs if recursively copied
+    const copiedRuns = join(wsBettercode, "benchmark-runs")
+    if (existsSync(copiedRuns)) {
+      rmSync(copiedRuns, { recursive: true, force: true })
+    }
   }
 
   // Copy .opencode plugin into fixture workspace

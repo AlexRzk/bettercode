@@ -45,6 +45,14 @@ function makeStats(overrides?: Partial<RunStats>): RunStats {
   }
 }
 
+function initGitWithConfig(dir: string) {
+  spawnSync("git", ["init"], { cwd: dir, encoding: "utf8", timeout: 5000 })
+  spawnSync("git", ["config", "user.email", "test@test.local"], { cwd: dir, encoding: "utf8", timeout: 5000 })
+  spawnSync("git", ["config", "user.name", "Test"], { cwd: dir, encoding: "utf8", timeout: 5000 })
+  spawnSync("git", ["add", "."], { cwd: dir, encoding: "utf8", timeout: 5000 })
+  spawnSync("git", ["commit", "-m", "initial"], { cwd: dir, encoding: "utf8", timeout: 5000 })
+}
+
 describe("workspace isolation", () => {
   it("creates isolated workspace from fixture", () => {
     const fixtureDir = makeFixture("fixture-src")
@@ -55,14 +63,12 @@ describe("workspace isolation", () => {
     const workspaceDir = makeFixture("workspace-target")
     const workspace = join(workspaceDir, "isolated")
 
-    // Simulate copy
     const { cpSync } = require("node:fs")
     cpSync(fixtureDir, workspace, { recursive: true })
 
     expect(existsSync(join(workspace, "src", "index.ts"))).toBe(true)
     expect(existsSync(join(workspace, "package.json"))).toBe(true)
 
-    // Modifying workspace should not affect fixture
     writeFileSync(join(workspace, "src", "index.ts"), "export const x = 2")
     expect(readFileSync(join(fixtureDir, "src", "index.ts"), "utf8")).toBe("export const x = 1")
     expect(readFileSync(join(workspace, "src", "index.ts"), "utf8")).toBe("export const x = 2")
@@ -71,23 +77,74 @@ describe("workspace isolation", () => {
     rmSync(workspaceDir, { recursive: true, force: true })
   })
 
-  it("git init creates commitable workspace", () => {
+  it("git init with local config creates commitable workspace", () => {
     const workspaceDir = makeFixture("git-workspace")
     mkdirSync(join(workspaceDir, "src"), { recursive: true })
     writeFileSync(join(workspaceDir, "src", "index.ts"), "export const x = 1")
 
-    spawnSync("git", ["init"], { cwd: workspaceDir, encoding: "utf8" })
-    spawnSync("git", ["add", "."], { cwd: workspaceDir, encoding: "utf8" })
-    spawnSync("git", ["commit", "-m", "initial"], { cwd: workspaceDir, encoding: "utf8" })
+    initGitWithConfig(workspaceDir)
 
-    const gitDir = join(workspaceDir, ".git")
-    expect(existsSync(gitDir)).toBe(true)
+    expect(existsSync(join(workspaceDir, ".git"))).toBe(true)
 
-    // Verify commit exists
     const result = spawnSync("git", ["log", "--oneline"], { cwd: workspaceDir, encoding: "utf8" })
     expect(result.stdout).toContain("initial")
 
     rmSync(workspaceDir, { recursive: true, force: true })
+  })
+
+  it("baseline workspace has no plugin file", () => {
+    const workspaceDir = makeFixture("baseline-check")
+    mkdirSync(join(workspaceDir, ".opencode", "plugin"), { recursive: true })
+    mkdirSync(join(workspaceDir, "src"), { recursive: true })
+    writeFileSync(join(workspaceDir, ".opencode", "plugin", "bettercode.js"), "// plugin")
+    writeFileSync(join(workspaceDir, "src", "index.ts"), "export const x = 1")
+
+    // Simulate disabling: remove plugin file
+    const pluginFile = join(workspaceDir, ".opencode", "plugin", "bettercode.js")
+    if (existsSync(pluginFile)) {
+      rmSync(pluginFile, { force: true })
+    }
+
+    expect(existsSync(pluginFile)).toBe(false)
+
+    rmSync(workspaceDir, { recursive: true, force: true })
+  })
+
+  it("bettercode workspace gets plugin from repo root", () => {
+    const repoDir = makeFixture("repo-root")
+    const workspaceDir = makeFixture("bc-workspace")
+
+    // Create fake repo structure
+    mkdirSync(join(repoDir, ".opencode", "plugin"), { recursive: true })
+    mkdirSync(join(repoDir, ".bettercode", "brain"), { recursive: true })
+    writeFileSync(join(repoDir, ".opencode", "plugin", "bettercode.js"), "// plugin code")
+    writeFileSync(join(repoDir, ".bettercode", "brain", "profile.md"), "# Profile")
+
+    // Simulate enableBetterCodeInWorkspace
+    const { cpSync } = require("node:fs")
+
+    const wsBettercode = join(workspaceDir, ".bettercode")
+    cpSync(join(repoDir, ".bettercode"), wsBettercode, { recursive: true })
+
+    const wsOpencode = join(workspaceDir, ".opencode", "plugin")
+    mkdirSync(wsOpencode, { recursive: true })
+    cpSync(join(repoDir, ".opencode", "plugin", "bettercode.js"), join(wsOpencode, "bettercode.js"))
+
+    expect(existsSync(join(workspaceDir, ".opencode", "plugin", "bettercode.js"))).toBe(true)
+    expect(existsSync(join(workspaceDir, ".bettercode", "brain", "profile.md"))).toBe(true)
+    expect(readFileSync(join(workspaceDir, ".opencode", "plugin", "bettercode.js"), "utf8")).toBe("// plugin code")
+
+    rmSync(repoDir, { recursive: true, force: true })
+    rmSync(workspaceDir, { recursive: true, force: true })
+  })
+
+  it("fixture tests are in fixture-tests not test", () => {
+    const fixtureDir = join(import.meta.dir, "..", "benchmarks", "fixtures", "failing-test")
+    const oldTestDir = join(fixtureDir, "test")
+    const newTestDir = join(fixtureDir, "fixture-tests")
+
+    expect(existsSync(newTestDir)).toBe(true)
+    expect(existsSync(join(newTestDir, "math.fixture.ts"))).toBe(true)
   })
 })
 

@@ -2,7 +2,7 @@
   "name": "benchmark-failing-test",
   "private": true,
   "scripts": {
-    "test": "bun test"
+    "test": "bun test fixture-tests/math.fixture.ts"
   },
   "devDependencies": {
     "@types/bun": "latest"

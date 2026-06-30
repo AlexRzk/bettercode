@@ -123,36 +123,49 @@ function createIsolatedWorkspace(fixtureDir: string, label: string, runDir: stri
   return workspace
 }
 
-function disableBetterCodeInWorkspace(workspace: string) {
-  const pluginDir = join(workspace, ".opencode", "plugin")
-  const configFile = join(workspace, ".opencode", "opencode.jsonc")
-  const pluginFile = join(pluginDir, "bettercode.js")
-
-  if (existsSync(pluginFile)) {
-    renameSync(pluginFile, join(pluginDir, "bettercode.js.disabled"))
+function enableBetterCodeInWorkspace(workspace: string, repoRoot: string) {
+  // Copy .bettercode config into fixture workspace
+  const repoBettercode = join(repoRoot, ".bettercode")
+  const wsBettercode = join(workspace, ".bettercode")
+  if (existsSync(repoBettercode)) {
+    cpSync(repoBettercode, wsBettercode, { recursive: true })
   }
-  if (existsSync(configFile)) {
-    const content = readFileSync(configFile, "utf8")
-    writeFileSync(configFile, content.replace(/"bettercode"/g, '"bettercode_disabled"'))
+
+  // Copy .opencode plugin into fixture workspace
+  const repoOpencode = join(repoRoot, ".opencode")
+  const wsOpencode = join(workspace, ".opencode")
+  mkdirSync(join(wsOpencode, "plugin"), { recursive: true })
+
+  const repoPlugin = join(repoOpencode, "plugin", "bettercode.js")
+  if (existsSync(repoPlugin)) {
+    cpSync(repoPlugin, join(wsOpencode, "plugin", "bettercode.js"))
+  }
+
+  // Copy opencode.jsonc if it exists in the repo
+  const repoConfig = join(repoOpencode, "opencode.jsonc")
+  if (existsSync(repoConfig)) {
+    cpSync(repoConfig, join(wsOpencode, "opencode.jsonc"))
   }
 }
 
-function enableBetterCodeInWorkspace(workspace: string) {
-  const pluginDir = join(workspace, ".opencode", "plugin")
-  const configFile = join(workspace, ".opencode", "opencode.jsonc")
-  const pluginDisabled = join(pluginDir, "bettercode.js.disabled")
-
-  if (existsSync(pluginDisabled)) {
-    renameSync(pluginDisabled, join(pluginDir, "bettercode.js"))
+function disableBetterCodeInWorkspace(workspace: string) {
+  // Ensure .opencode/plugin/bettercode.js is absent
+  const pluginFile = join(workspace, ".opencode", "plugin", "bettercode.js")
+  if (existsSync(pluginFile)) {
+    rmSync(pluginFile, { force: true })
   }
-  if (existsSync(configFile)) {
-    const content = readFileSync(configFile, "utf8")
-    writeFileSync(configFile, content.replace(/"bettercode_disabled"/g, '"bettercode"'))
+  // Ensure .bettercode is absent
+  const bettercodeDir = join(workspace, ".bettercode")
+  if (existsSync(bettercodeDir)) {
+    rmSync(bettercodeDir, { recursive: true, force: true })
   }
 }
 
 function initGitInWorkspace(workspace: string) {
+  // Set local git identity to avoid failures when global config is missing
   spawnSync("git", ["init"], { cwd: workspace, encoding: "utf8", timeout: 5000 })
+  spawnSync("git", ["config", "user.email", "bettercode-benchmark@local"], { cwd: workspace, encoding: "utf8", timeout: 5000 })
+  spawnSync("git", ["config", "user.name", "BetterCode Benchmark"], { cwd: workspace, encoding: "utf8", timeout: 5000 })
   spawnSync("git", ["add", "."], { cwd: workspace, encoding: "utf8", timeout: 5000 })
   spawnSync("git", ["commit", "-m", "initial"], { cwd: workspace, encoding: "utf8", timeout: 5000 })
 }
@@ -175,9 +188,15 @@ function resolveFixtureDir(task: BenchmarkTask): string | null {
   return existsSync(fixtureDir) ? fixtureDir : null
 }
 
+function shellCommandArgs(command: string) {
+  if (process.platform === "win32") return ["cmd.exe", "/d", "/s", "/c", command]
+  return ["sh", "-c", command]
+}
+
 function runSetupCommands(workspace: string, commands: string[]) {
   for (const command of commands) {
-    spawnSync("sh", ["-c", command], { cwd: workspace, encoding: "utf8", timeout: 60000, stdio: "pipe" })
+    const args = shellCommandArgs(command)
+    spawnSync(args[0]!, args.slice(1), { cwd: workspace, encoding: "utf8", timeout: 60000, stdio: "pipe" })
   }
 }
 
@@ -369,7 +388,7 @@ export async function runBenchmark(repoRoot: string, extraArgs: string[] = []) {
       if (fixtureDir) {
         workspace = createIsolatedWorkspace(fixtureDir, "bettercode", bettercodeDir)
         initGitInWorkspace(workspace)
-        enableBetterCodeInWorkspace(workspace)
+        enableBetterCodeInWorkspace(workspace, repoRoot)
       } else {
         workspace = repoRoot
       }
@@ -488,14 +507,6 @@ export async function runBenchmark(repoRoot: string, extraArgs: string[] = []) {
   const reportPath = join(repoRoot, "docs", "benchmark-report.md")
   writeFileSync(reportPath, report)
   writeFileSync(join(runDir, "suite-result.json"), JSON.stringify(suiteResult, null, 2))
-
-  // Cleanup isolated workspaces to save disk space
-  for (const comp of comparisons) {
-    const baselineWs = join(runDir, "baseline", comp.task.id, "baseline-workspace")
-    const bettercodeWs = join(runDir, "bettercode", comp.task.id, "bettercode-workspace")
-    if (existsSync(baselineWs)) rmSync(baselineWs, { recursive: true, force: true })
-    if (existsSync(bettercodeWs)) rmSync(bettercodeWs, { recursive: true, force: true })
-  }
 
   console.log(`\nBenchmark complete!`)
   console.log(`  Report: ${reportPath}`)

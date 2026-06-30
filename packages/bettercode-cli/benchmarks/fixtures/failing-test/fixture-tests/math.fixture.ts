@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test"
-import { add, multiply } from "../src/math"
+import { add, multiply } from "../../src/math"
 
 describe("math", () => {
   it("adds two numbers", () => {
